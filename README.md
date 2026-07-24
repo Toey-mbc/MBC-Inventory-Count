@@ -25,10 +25,10 @@
 ห้ามนำ `SUPABASE_SERVICE_ROLE_KEY` ใส่ตัวแปรที่ขึ้นต้น `NEXT_PUBLIC_` และไม่จำเป็นต้องใส่ใน Vercel สำหรับระบบรุ่นนี้
 
 ## บัญชีทดสอบ
-- admin@mbc.local / Admin@2026
-- warehouse@mbc.local / Ware@2026
-- salesupport@mbc.local / Sale@2026
-- counter01..04@mbc.local / Count@2026
+- admin / Toey1234
+- warehouse / 1234
+- salesupport / 1234
+- counter01 ถึง counter04 / 1234
 
 เปลี่ยนรหัสผ่านก่อนใช้งานจริง
 
@@ -38,3 +38,9 @@
 ## ล้างข้อมูลทดสอบ
 SQL: `select public.reset_test_data();`
 ฟังก์ชันนี้ลบข้อมูลรอบ/การยิง/ยอดรวม/unknown แต่เก็บ Products, Warehouses, Locations และ Users
+
+
+## การเข้าสู่ระบบแบบ Username
+ผู้ใช้กรอกเฉพาะชื่อ เช่น `admin` หรือ `counter01` โดยระบบจะแปลงเป็นอีเมลภายในให้อัตโนมัติ ผู้ใช้ไม่ต้องพิมพ์โดเมนใด ๆ
+
+> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ก่อนรันสคริปต์สร้างผู้ใช้ ให้ตั้งค่า Minimum password length ใน Supabase Auth ให้รองรับ 4 ตัวอักษร และบังคับให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก

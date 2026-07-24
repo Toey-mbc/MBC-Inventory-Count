@@ -23,10 +23,10 @@ npm run seed:users
 ```
 
 บัญชีที่สร้าง:
-- admin@mbc.local / Admin@2026
-- warehouse@mbc.local / Ware@2026
-- salesupport@mbc.local / Sale@2026
-- counter01@mbc.local ถึง counter04@mbc.local / Count@2026
+- admin / Toey1234
+- warehouse / 1234
+- salesupport / 1234
+- counter01 ถึง counter04 / 1234
 
 Service Role key ห้าม Commit ขึ้น GitHub และห้ามใส่เป็นตัวแปร `NEXT_PUBLIC_`
 
@@ -59,3 +59,9 @@ select public.reset_test_data();
 ```
 
 ข้อมูลรอบทดสอบ การยิง ยอดรวม และ Unknown จะถูกลบจาก Cascade แต่ Product, Barcode, Warehouse, Location และ User จะยังอยู่
+
+
+## การเข้าสู่ระบบแบบ Username
+ผู้ใช้กรอกเฉพาะชื่อ เช่น `admin` หรือ `counter01` โดยระบบจะแปลงเป็นอีเมลภายในให้อัตโนมัติ ผู้ใช้ไม่ต้องพิมพ์โดเมนใด ๆ
+
+> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ก่อนรันสคริปต์สร้างผู้ใช้ ให้ตั้งค่า Minimum password length ใน Supabase Auth ให้รองรับ 4 ตัวอักษร และบังคับให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก
