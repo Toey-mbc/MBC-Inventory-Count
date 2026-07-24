@@ -1,91 +1,89 @@
-# คู่มือ Deploy แบบฟรี: GitHub + Supabase + Vercel
+# คู่มือ Deploy MBC Inventory Online V1.3
 
-## A. สร้าง Supabase
-1. สมัครและสร้าง Project แบบ Free
-2. ไปที่ SQL Editor > New query
-3. เปิดไฟล์ `supabase/migrations/001_initial.sql` คัดลอกทั้งหมดและกด Run
-4. ไปที่ Project Settings > API แล้วคัดลอก Project URL และ Publishable/Anon key
-5. เปิด Authentication > Providers > Email และเปิด Email/Password
+## 1. สร้าง Supabase Project
 
-## B. สร้างบัญชีตัวอย่าง
-ทำบนคอมพิวเตอร์ของผู้ Deploy เท่านั้น
-1. ติดตั้ง Node.js 20 ขึ้นไป
-2. คัดลอก `.env.example` เป็น `.env.local`
-3. ใส่ Project URL, Publishable key และ Service Role key
-4. เปิด Terminal ในโฟลเดอร์โปรเจกต์
-5. รัน `npm install`
-6. รันคำสั่งต่อไปนี้ใน PowerShell:
+สร้าง Project แล้วเก็บค่าต่อไปนี้:
 
-```powershell
-$env:NEXT_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co"
-$env:SUPABASE_SERVICE_ROLE_KEY="service-role-key"
-npm run seed:users
+- Project URL
+- Publishable Key หรือ Anon Key
+- Service Role Key
+
+Service Role Key เป็นความลับสูง ใช้เฉพาะ Environment Variables ฝั่ง Server ของ Vercel เท่านั้น
+
+## 2. สร้างฐานข้อมูล
+
+เข้า Supabase > SQL Editor แล้วรันตามลำดับ:
+
+1. `supabase/migrations/001_initial.sql`
+2. `supabase/migrations/002_admin_user_management.sql`
+
+## 3. สร้าง Admin คนแรกใน Supabase
+
+เข้า Supabase > Authentication > Users > Add user
+
+กรอก:
+
+```text
+Email: admin@mbc.internal
+Password: Toey1234
+Auto Confirm User: เปิด
 ```
 
-บัญชีที่สร้าง:
-- admin / Toey1234
-- warehouse / 1234
-- salesupport / 1234
-- counter01 ถึง counter04 / 1234
-
-สคริปต์นี้รันซ้ำได้: หากบัญชีมีอยู่แล้ว ระบบจะอัปเดตรหัสผ่านและ Role ให้ถูกต้อง
-
-Service Role key ห้าม Commit ขึ้น GitHub และห้ามใส่เป็นตัวแปร `NEXT_PUBLIC_`
-
-## C. อัปโหลด GitHub
-1. สร้าง Private repository
-2. อัปโหลดไฟล์และโฟลเดอร์ทั้งหมดในโปรเจกต์ โดยไม่อัปโหลด `.env.local`
-3. ตรวจว่า GitHub มี `package.json`, `app`, `components`, `lib`, `supabase`
-
-## D. Deploy Vercel
-1. New Project > Import Git Repository
-2. Framework Preset เลือก Next.js
-3. เพิ่ม Environment Variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-4. ไม่ต้องใส่ Service Role key ใน Vercel สำหรับรุ่นนี้
-5. กด Deploy
-
-## E. ทดสอบพร้อมกัน
-1. Login คนละเครื่องด้วย Counter 01–04
-2. Admin หรือ Warehouse Manager สร้างรอบและกดเริ่มนับ
-3. ทุกเครื่องเลือกรอบและโลเคชั่น แล้วทดลองยิง SKU เดียวกัน
-4. ตรวจยอดรวมและรายการล่าสุด
-5. ทดสอบตัดอินเทอร์เน็ต: รายการจะเข้า Local Queue และกด “รอซิงก์” เมื่ออินเทอร์เน็ตกลับมา
-
-## F. ล้างข้อมูล UAT
-หลังทุกเครื่องซิงก์เป็น 0 แล้ว ให้ Admin เรียก RPC ผ่านแอปในรุ่นถัดไป หรือใช้ SQL Editor:
+หลังสร้าง User แล้ว กลับไป SQL Editor และรัน:
 
 ```sql
-select public.reset_test_data();
+select public.promote_first_admin('admin@mbc.internal');
 ```
 
-ข้อมูลรอบทดสอบ การยิง ยอดรวม และ Unknown จะถูกลบจาก Cascade แต่ Product, Barcode, Warehouse, Location และ User จะยังอยู่
+คำสั่งนี้ใช้ได้เฉพาะตอนที่ระบบยังไม่มี Active Admin เพื่อป้องกันการยกระดับสิทธิ์โดยไม่ตั้งใจ
 
+## 4. ตั้งค่า Vercel
 
-## การเข้าสู่ระบบแบบ Username
-ผู้ใช้กรอกเฉพาะชื่อ เช่น `admin` หรือ `counter01` โดยระบบจะแปลงเป็นอีเมลภายในให้อัตโนมัติ ผู้ใช้ไม่ต้องพิมพ์โดเมนใด ๆ
+เพิ่ม Environment Variables:
 
-> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ผู้ใช้ทั่วไปกรอก `1234` ที่หน้า Login แต่ระบบจะแปลงเป็นรหัสภายในที่ผ่านข้อกำหนดของ Supabase อัตโนมัติ ควรให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก
-
-## หาก Login ไม่ได้หลังอัปเดต V1.2
-สาเหตุส่วนใหญ่คือบัญชียังไม่ได้ถูกสร้างใน Supabase Auth หรือบัญชีเดิมใช้รหัสผ่านคนละชุด
-
-ให้เปิด Terminal ในโฟลเดอร์โปรเจกต์ แล้วรันคำสั่งนี้อีกครั้งโดยใช้ Service Role key:
-
-```powershell
-$env:NEXT_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co"
-$env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="publishable-or-anon-key"
-$env:SUPABASE_SERVICE_ROLE_KEY="service-role-key"
-npm install
-npm run seed:users
-npm run check:setup
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 ```
 
-จากนั้น Redeploy Vercel และทดสอบ:
-- admin / Toey1234
-- warehouse / 1234
-- salesupport / 1234
-- counter01 ถึง counter04 / 1234
+ตั้งค่าครบแล้ว Redeploy
 
-> ใน Supabase รหัสภายในของผู้ใช้งานทั่วไปคือ `MBC@1234` เพื่อให้ผ่านข้อกำหนดความยาวรหัสผ่าน แต่หน้า Login รับ `1234` และแปลงให้อัตโนมัติ ผู้ใช้ไม่ต้องทราบรหัสภายในนี้
+## 5. Login
+
+หน้า Login กรอก:
+
+```text
+Username: admin
+Password: Toey1234
+```
+
+ไม่ต้องกรอก `@mbc.internal`
+
+## 6. เพิ่มผู้ใช้งานอื่น
+
+หลัง Admin Login:
+
+1. เปิดเมนู **ผู้ใช้งาน**
+2. กดเพิ่มผู้ใช้งาน
+3. กรอก Username, ชื่อ, Role และรหัสผ่านชั่วคราว
+4. กดบันทึก
+
+ผู้ใช้ใหม่ Login ได้ทันที โดยไม่ต้องเข้า Supabase Dashboard
+
+กรณีใช้รหัสชั่วคราว `1234` ระบบจะจัดเก็บเป็นรหัสภายในที่ผ่านข้อกำหนดของ Supabase แต่หน้า Login ยังคงใช้ `1234`
+
+## 7. การตั้งค่า Role
+
+- Admin: สิทธิ์สูงสุด
+- Warehouse Manager: จัดการคลังและรอบตรวจนับ
+- Sale Support: สิทธิ์เท่ากับ Warehouse Manager
+- Counter: ตรวจนับสินค้า
+- Viewer: อ่านอย่างเดียว
+
+## 8. ข้อควรระวัง
+
+- ห้ามใส่ Service Role Key ใน GitHub
+- ห้ามตั้งชื่อตัวแปรเป็น `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`
+- ไฟล์ `.env.local` ต้องไม่ถูก Commit
+- ควรเปลี่ยนรหัสผ่านชั่วคราวก่อนใช้งาน Production

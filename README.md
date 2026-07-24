@@ -1,51 +1,58 @@
-# MBC Inventory Count Online
+# MBC Inventory Online V1.3
 
-ระบบตรวจนับสินค้าออนไลน์แบบ Realtime สำหรับ MBC Communications
+ระบบตรวจนับสินค้าออนไลน์สำหรับ GitHub + Vercel + Supabase
 
-## Stack
-- Next.js App Router
-- Supabase Auth + PostgreSQL + Realtime
-- Vercel
+## แนวทาง User ใหม่
+
+ระบบไม่มี Demo User หลายบัญชีแล้ว ให้สร้างเพียง Admin คนแรกใน Supabase จากนั้น Admin เพิ่มผู้ใช้งานอื่นจากเมนู **ผู้ใช้งาน** ในระบบได้ทันที
+
+บัญชี Admin ที่แนะนำ:
+
+- Email ใน Supabase Auth: `admin@mbc.internal`
+- Username ที่ใช้หน้า Login: `admin`
+- Password: `Toey1234`
+
+## Environment Variables
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` ใช้เฉพาะ Server API สำหรับจัดการผู้ใช้ ห้ามตั้งชื่อขึ้นต้นด้วย `NEXT_PUBLIC_` และห้ามนำไปใช้ใน Client Component
 
 ## ติดตั้ง
-1. สร้าง Supabase Free project
-2. เปิด SQL Editor แล้วรันไฟล์ `supabase/migrations/001_initial.sql`
-3. คัดลอก `.env.example` เป็น `.env.local` และกรอก URL/Publishable key
-4. สำหรับสร้าง Demo users ให้ใส่ Service Role key เฉพาะในเครื่อง แล้วรัน `npm run seed:users`
-5. รัน `npm install` และ `npm run dev`
 
-## Deploy Vercel
-1. อัปโหลดโฟลเดอร์นี้ขึ้น GitHub
-2. Import repository ใน Vercel
-3. เพิ่ม Environment Variables:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-4. Deploy
+```bash
+npm install
+npm run dev
+```
 
-ห้ามนำ `SUPABASE_SERVICE_ROLE_KEY` ใส่ตัวแปรที่ขึ้นต้น `NEXT_PUBLIC_` และไม่จำเป็นต้องใส่ใน Vercel สำหรับระบบรุ่นนี้
+## Database
 
-## บัญชีทดสอบ
-- admin / Toey1234
-- warehouse / 1234
-- salesupport / 1234
-- counter01 ถึง counter04 / 1234
+รัน SQL ตามลำดับ:
 
-เปลี่ยนรหัสผ่านก่อนใช้งานจริง
+1. `supabase/migrations/001_initial.sql`
+2. `supabase/migrations/002_admin_user_management.sql`
 
-## วิธีทำงาน
-แต่ละการยิงเรียก RPC `record_scan()` ฐานข้อมูลบันทึก Scan Event แบบ append-only และ trigger ปรับ `scan_totals` แบบ atomic ดังนั้นหลายเครื่องยิงพร้อมกันแล้วจำนวนไม่เขียนทับกัน รายการซ้ำป้องกันด้วย `client_event_id` แบบ UUID
+จากนั้นสร้าง Admin คนแรกตาม `DEPLOY_GUIDE_TH.md`
 
-## ล้างข้อมูลทดสอบ
-SQL: `select public.reset_test_data();`
-ฟังก์ชันนี้ลบข้อมูลรอบ/การยิง/ยอดรวม/unknown แต่เก็บ Products, Warehouses, Locations และ Users
+## Role
 
+- Admin: จัดการทั้งหมดและจัดการผู้ใช้
+- Warehouse Manager: จัดการรอบตรวจนับ Master และอนุมัติ
+- Sale Support: สิทธิ์เท่ากับ Warehouse Manager
+- Counter: ยิงบาร์โค้ดและจัดการรายการของตนเอง
+- Viewer: ดูข้อมูลอย่างเดียว
 
-## การเข้าสู่ระบบแบบ Username
-ผู้ใช้กรอกเฉพาะชื่อ เช่น `admin` หรือ `counter01` โดยระบบจะแปลงเป็นอีเมลภายในให้อัตโนมัติ ผู้ใช้ไม่ต้องพิมพ์โดเมนใด ๆ
+## การเพิ่มผู้ใช้ภายหลัง
 
-> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ผู้ใช้ทั่วไปกรอก `1234` ที่หน้า Login แต่ระบบจะแปลงเป็นรหัสภายในที่ผ่านข้อกำหนดของ Supabase อัตโนมัติ ควรให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก
+Admin Login แล้วไปที่เมนู **ผู้ใช้งาน** สามารถ:
 
-## แก้ Login ใน V1.2
-รัน `npm run seed:users` ซ้ำได้เพื่อสร้างหรืออัปเดตบัญชีเดิม แล้วใช้ `npm run check:setup` เพื่อตรวจว่าบัญชีครบทุกคน
+- เพิ่มผู้ใช้
+- เลือก Role
+- Reset Password
+- ระงับ/เปิดใช้งานบัญชี
 
-ผู้ใช้ทั่วไปยังกรอก `1234` ที่หน้า Login ระบบจะแปลงเป็นรหัสภายในที่ Supabase ยอมรับให้อัตโนมัติ
+ไม่ต้องสร้างผู้ใช้ทีละคนใน Supabase Dashboard

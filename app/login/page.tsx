@@ -29,7 +29,7 @@ export default function Login(){
    const {error}=await createClient().auth.signInWithPassword({email,password:authPassword})
    if(error){
     console.error('Login failed:',error.message)
-    setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบว่าได้รันคำสั่งสร้างผู้ใช้แล้ว')
+    setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ Username, Password และสิทธิ์ Admin ใน Supabase')
    }else{
     router.replace('/dashboard')
     router.refresh()
