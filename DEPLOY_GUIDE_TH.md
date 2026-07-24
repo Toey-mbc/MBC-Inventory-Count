@@ -28,6 +28,8 @@ npm run seed:users
 - salesupport / 1234
 - counter01 ถึง counter04 / 1234
 
+สคริปต์นี้รันซ้ำได้: หากบัญชีมีอยู่แล้ว ระบบจะอัปเดตรหัสผ่านและ Role ให้ถูกต้อง
+
 Service Role key ห้าม Commit ขึ้น GitHub และห้ามใส่เป็นตัวแปร `NEXT_PUBLIC_`
 
 ## C. อัปโหลด GitHub
@@ -64,4 +66,26 @@ select public.reset_test_data();
 ## การเข้าสู่ระบบแบบ Username
 ผู้ใช้กรอกเฉพาะชื่อ เช่น `admin` หรือ `counter01` โดยระบบจะแปลงเป็นอีเมลภายในให้อัตโนมัติ ผู้ใช้ไม่ต้องพิมพ์โดเมนใด ๆ
 
-> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ก่อนรันสคริปต์สร้างผู้ใช้ ให้ตั้งค่า Minimum password length ใน Supabase Auth ให้รองรับ 4 ตัวอักษร และบังคับให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก
+> รหัสผ่าน `1234` เป็นรหัสชั่วคราวสำหรับ UAT เท่านั้น ผู้ใช้ทั่วไปกรอก `1234` ที่หน้า Login แต่ระบบจะแปลงเป็นรหัสภายในที่ผ่านข้อกำหนดของ Supabase อัตโนมัติ ควรให้ผู้ใช้เปลี่ยนรหัสหลังเข้าสู่ระบบครั้งแรก
+
+## หาก Login ไม่ได้หลังอัปเดต V1.2
+สาเหตุส่วนใหญ่คือบัญชียังไม่ได้ถูกสร้างใน Supabase Auth หรือบัญชีเดิมใช้รหัสผ่านคนละชุด
+
+ให้เปิด Terminal ในโฟลเดอร์โปรเจกต์ แล้วรันคำสั่งนี้อีกครั้งโดยใช้ Service Role key:
+
+```powershell
+$env:NEXT_PUBLIC_SUPABASE_URL="https://xxxx.supabase.co"
+$env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="publishable-or-anon-key"
+$env:SUPABASE_SERVICE_ROLE_KEY="service-role-key"
+npm install
+npm run seed:users
+npm run check:setup
+```
+
+จากนั้น Redeploy Vercel และทดสอบ:
+- admin / Toey1234
+- warehouse / 1234
+- salesupport / 1234
+- counter01 ถึง counter04 / 1234
+
+> ใน Supabase รหัสภายในของผู้ใช้งานทั่วไปคือ `MBC@1234` เพื่อให้ผ่านข้อกำหนดความยาวรหัสผ่าน แต่หน้า Login รับ `1234` และแปลงให้อัตโนมัติ ผู้ใช้ไม่ต้องทราบรหัสภายในนี้

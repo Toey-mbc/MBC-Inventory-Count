@@ -1,13 +1,14 @@
 {
   "name": "mbc-inventory-online",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed:users": "node scripts/create-demo-users.mjs"
+    "seed:users": "node scripts/create-demo-users.mjs",
+    "check:setup": "node scripts/check-setup.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
