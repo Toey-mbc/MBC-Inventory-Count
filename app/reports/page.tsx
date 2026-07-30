@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   BarChart3,
   Boxes,
+  ChevronDown,
+  ChevronRight,
   Download,
   FileSpreadsheet,
   MapPin,
@@ -15,7 +17,7 @@ import { conditionLabel, conditionOptions, statusLabel } from '@/lib/constants'
 import { exportWorkbook } from '@/lib/export'
 import { createClient } from '@/lib/supabase/client'
 
-type ReportView = 'detail' | 'sku' | 'location'
+type ReportView = 'detail' | 'sku' | 'location' | 'hierarchy'
 
 type RoundOption = {
   id: string
@@ -77,6 +79,17 @@ type LocationSummary = {
   quantity: number
   skus: number
   conditions: number
+  lastUpdated: string
+}
+
+
+type LocationSkuBreakdown = {
+  key: string
+  productId: string
+  sku: string
+  productName: string
+  quantity: number
+  conditionText: string
   lastUpdated: string
 }
 
@@ -177,6 +190,7 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
   const [sourceMode, setSourceMode] = useState<'view' | 'tables'>('tables')
+  const [expandedLocations, setExpandedLocations] = useState<Set<string>>(new Set())
 
   async function loadMetadata() {
     setLoadingMeta(true)
@@ -340,6 +354,7 @@ export default function ReportsPage() {
   const filteredRows = useMemo(() => {
     const keyword = query.trim().toLocaleLowerCase('th-TH')
     return rows.filter((row) => {
+      if (row.quantity === 0) return false
       if (selectedWarehouse !== 'all' && row.warehouseId !== selectedWarehouse) return false
       if (selectedLocation !== 'all' && row.locationId !== selectedLocation) return false
       if (selectedCondition !== 'all' && row.condition !== selectedCondition) return false
@@ -431,6 +446,61 @@ export default function ReportsPage() {
       )
   }, [filteredRows])
 
+
+  const locationSkuBreakdown = useMemo(() => {
+    const byLocation = new Map<string, Map<string, {
+      productId: string
+      sku: string
+      productName: string
+      quantity: number
+      conditionTotals: Map<string, number>
+      lastUpdated: string
+    }>>()
+
+    for (const row of filteredRows) {
+      const productMap = byLocation.get(row.locationId) || new Map()
+      const item = productMap.get(row.productId) || {
+        productId: row.productId,
+        sku: row.sku,
+        productName: row.productName,
+        quantity: 0,
+        conditionTotals: new Map<string, number>(),
+        lastUpdated: '',
+      }
+      item.quantity += row.quantity
+      item.conditionTotals.set(
+        row.condition,
+        (item.conditionTotals.get(row.condition) || 0) + row.quantity,
+      )
+      if (!item.lastUpdated || row.updatedAt > item.lastUpdated) item.lastUpdated = row.updatedAt
+      productMap.set(row.productId, item)
+      byLocation.set(row.locationId, productMap)
+    }
+
+    const normalized = new Map<string, LocationSkuBreakdown[]>()
+    for (const [locationId, productMap] of byLocation) {
+      normalized.set(
+        locationId,
+        Array.from(productMap.values())
+          .map((item) => ({
+            key: `${locationId}:${item.productId}`,
+            productId: item.productId,
+            sku: item.sku,
+            productName: item.productName,
+            quantity: item.quantity,
+            conditionText: Array.from(item.conditionTotals.entries())
+              .filter(([, quantity]) => quantity !== 0)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([condition, quantity]) => `${conditionLabel(condition)} ${formatNumber(quantity)}`)
+              .join(' / '),
+            lastUpdated: item.lastUpdated,
+          }))
+          .sort((a, b) => b.quantity - a.quantity || a.sku.localeCompare(b.sku)),
+      )
+    }
+    return normalized
+  }, [filteredRows])
+
   const totalQuantity = useMemo(
     () => filteredRows.reduce((sum, row) => sum + row.quantity, 0),
     [filteredRows],
@@ -445,7 +515,11 @@ export default function ReportsPage() {
   )
 
   const currentRows =
-    view === 'detail' ? filteredRows : view === 'sku' ? skuSummary : locationSummary
+    view === 'detail'
+      ? filteredRows
+      : view === 'sku'
+        ? skuSummary
+        : locationSummary
   const pageCount = Math.max(1, Math.ceil(currentRows.length / PAGE_SIZE))
   const visibleRows = currentRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
@@ -467,6 +541,24 @@ export default function ReportsPage() {
     setSelectedCondition('all')
     setQuery('')
     setFocusSku('')
+  }
+
+
+  function toggleLocation(locationId: string) {
+    setExpandedLocations((current) => {
+      const next = new Set(current)
+      if (next.has(locationId)) next.delete(locationId)
+      else next.add(locationId)
+      return next
+    })
+  }
+
+  function expandAllLocations() {
+    setExpandedLocations(new Set(locationSummary.map((item) => item.locationId)))
+  }
+
+  function collapseAllLocations() {
+    setExpandedLocations(new Set())
   }
 
   async function exportReport() {
@@ -519,6 +611,23 @@ export default function ReportsPage() {
             })),
           },
           {
+            name: 'เจาะลึก Location-SKU',
+            rows: locationSummary.flatMap((location) =>
+              (locationSkuBreakdown.get(location.locationId) || []).map((sku) => ({
+                คลัง: location.warehouseCode,
+                ชื่อคลัง: location.warehouseName,
+                โลเคชั่น: location.locationCode,
+                ชื่อโลเคชั่น: location.locationName,
+                โซน: location.zone,
+                SKU: sku.sku,
+                ชื่อสินค้า: sku.productName,
+                สภาพและจำนวน: sku.conditionText || '-',
+                จำนวนรวม: sku.quantity,
+                อัปเดตล่าสุด: formatDateTime(sku.lastUpdated),
+              })),
+            ),
+          },
+          {
             name: 'เงื่อนไขรายงาน',
             rows: [
               {
@@ -556,7 +665,7 @@ export default function ReportsPage() {
         <div>
           <div className="page-title">รายงานตรวจนับแบบละเอียด</div>
           <div className="muted">
-            ดูได้ถึงระดับรอบตรวจนับ → คลัง → โลเคชั่น → SKU → สภาพสินค้า
+            ดูและเจาะรายละเอียดได้ถึงระดับรอบตรวจนับ → คลัง → โลเคชั่น → SKU → สภาพสินค้า
           </div>
         </div>
         <div className="report-head-actions">
@@ -713,8 +822,20 @@ export default function ReportsPage() {
             >
               สรุปตามโลเคชั่น
             </button>
+            <button
+              className={view === 'hierarchy' ? 'active' : ''}
+              onClick={() => setView('hierarchy')}
+            >
+              เจาะลึก Location → SKU
+            </button>
           </div>
           <div className="report-table-meta">
+            {view === 'hierarchy' && (
+              <span className="report-expand-actions">
+                <button type="button" onClick={expandAllLocations}>เปิดทั้งหมด</button>
+                <button type="button" onClick={collapseAllLocations}>ย่อทั้งหมด</button>
+              </span>
+            )}
             {loadingRows ? 'กำลังดึงข้อมูล...' : `${formatNumber(currentRows.length)} รายการ`}
             <span className="report-source-badge">
               {sourceMode === 'view' ? 'Report View' : 'Live Tables'}
@@ -853,6 +974,69 @@ export default function ReportsPage() {
                   ))
                 ) : (
                   <tr><td colSpan={8} className="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {view === 'hierarchy' && (
+            <table className="table report-table report-hierarchy-table">
+              <thead>
+                <tr>
+                  <th>คลัง / โลเคชั่น</th>
+                  <th>โซน</th>
+                  <th>SKU / ชื่อสินค้า</th>
+                  <th>สภาพและจำนวน</th>
+                  <th className="number-cell">จำนวนรวม</th>
+                  <th>อัปเดตล่าสุด</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleRows.length > 0 ? (
+                  (visibleRows as LocationSummary[]).flatMap((location) => {
+                    const isExpanded = expandedLocations.has(location.locationId)
+                    const skuRows = locationSkuBreakdown.get(location.locationId) || []
+                    return [
+                      <tr key={`location:${location.locationId}`} className="report-hierarchy-location-row">
+                        <td>
+                          <button
+                            type="button"
+                            className="report-hierarchy-toggle"
+                            onClick={() => toggleLocation(location.locationId)}
+                            aria-expanded={isExpanded}
+                          >
+                            {isExpanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
+                            <span>
+                              <b>{location.warehouseCode} / {location.locationCode}</b>
+                              <small>{location.warehouseName} · {location.locationName}</small>
+                            </span>
+                          </button>
+                        </td>
+                        <td>{location.zone}</td>
+                        <td><b>{formatNumber(location.skus)} SKU</b></td>
+                        <td>{formatNumber(location.conditions)} สภาพสินค้า</td>
+                        <td className="number-cell"><b>{formatNumber(location.quantity)}</b></td>
+                        <td>{formatDateTime(location.lastUpdated)}</td>
+                      </tr>,
+                      ...(isExpanded
+                        ? skuRows.map((sku) => (
+                            <tr key={sku.key} className="report-hierarchy-sku-row">
+                              <td><span className="report-tree-line">└─</span></td>
+                              <td>-</td>
+                              <td>
+                                <b className="report-sku">{sku.sku}</b>
+                                <small>{sku.productName}</small>
+                              </td>
+                              <td>{sku.conditionText || '-'}</td>
+                              <td className="number-cell"><b>{formatNumber(sku.quantity)}</b></td>
+                              <td>{formatDateTime(sku.lastUpdated)}</td>
+                            </tr>
+                          ))
+                        : []),
+                    ]
+                  })
+                ) : (
+                  <tr><td colSpan={6} className="empty-state">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>
                 )}
               </tbody>
             </table>

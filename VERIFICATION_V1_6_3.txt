@@ -1,0 +1,18 @@
+MBC Inventory Online V1.6.3 verification
+Date: 2026-07-30
+
+Scope
+- Based on V1.6.2 audit-page build repair.
+- Detailed report page retained and enhanced.
+- Added Location -> SKU expandable drill-down.
+- Added report SQL migration 006.
+- Added Excel sheet for Location-SKU drill-down.
+
+Static checks completed
+- TypeScript syntax and internal report types checked with TypeScript 5.8.3 using temporary external-module declarations.
+- Full app source parsed without syntax errors using the same temporary declarations.
+- JSON package file parsed successfully.
+- No node_modules, .next, tsconfig.tsbuildinfo or typecheck-stubs.d.ts included.
+
+Environment limitation
+- A real npm install/next build could not be executed in this environment because the internal npm registry did not provide @supabase/supabase-js.
