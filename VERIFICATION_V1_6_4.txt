@@ -1,0 +1,13 @@
+MBC Inventory Online V1.6.4 Report Verification
+
+PASS - JavaScript syntax check (node --check)
+PASS - Report page opens without browser page errors
+PASS - Default product detail view displays 7 seeded detail rows
+PASS - Barcode column displays the primary product barcode
+PASS - SKU x Warehouse tab changes view successfully
+PASS - Location filter reduces rows correctly
+PASS - Barcode/SKU/product search works
+PASS - Clear filters restores all report rows
+PASS - Responsive report screenshot generated at 1600 x 1000
+
+Note: npm install could not be completed in the OpenAI internal package registry because @supabase/supabase-js@2.57.4 is unavailable there. No TypeScript/Next.js source was changed in V1.6.4; the deployable application code is based on the V1.6.3 build-fixed project and this update changes the embedded Workspace HTML/report UI only.
