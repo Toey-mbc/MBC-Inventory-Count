@@ -1,0 +1,17 @@
+MBC Inventory Online V1.6.2 verification
+
+Root cause:
+- Obsolete typecheck-stubs.d.ts overrode React/JSX declarations.
+- Next.js route validation therefore treated JSX.Element and ReactNode as incompatible.
+
+Fix verification:
+- typecheck-stubs.d.ts removed from delivery: PASS
+- tsconfig.json explicitly excludes obsolete/internal stubs: PASS
+- TypeScript include scope limited to app/components/lib and generated Next types: PASS
+- prebuild removes stale stub, .next and tsconfig.tsbuildinfo: PASS
+- prebuild script syntax check: PASS
+- stale stub deletion simulation: PASS
+- no conflicting React/JSX declarations under app/components/lib: PASS
+
+Environment limitation:
+- Full npm install / next build could not be executed in this sandbox because its internal npm registry does not provide @supabase/supabase-js.

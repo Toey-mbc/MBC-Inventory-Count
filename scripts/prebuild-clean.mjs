@@ -11,6 +11,9 @@ const remove = (target, options = {}) => {
 // reads the current configuration and TypeScript never reuses stale metadata.
 remove('.next', { recursive: true })
 remove('tsconfig.tsbuildinfo')
+remove('typecheck-stubs.d.ts')
+remove('.internal-types.d.ts')
+remove('tsconfig.internal.json')
 
 if (existsSync('next.config.mjs') && existsSync('next.config.ts')) {
   remove('next.config.ts')
