@@ -1,0 +1,17 @@
+MBC Inventory Online V1.6.5 verification
+
+PASS - JavaScript syntax checked with node --check
+PASS - Brand filter field exists: reportBrand
+PASS - Brand ID is carried from Product Master into report rows
+PASS - Brand filter limits detail rows correctly
+PASS - Brand KPI counts filtered brands correctly
+PASS - Detail table includes explicit Brand column
+PASS - SKU x Warehouse table includes explicit Brand column
+PASS - Warehouse summary includes Brand count
+PASS - Excel mappings include Brand fields
+PASS - Brand sorting works: Brand > SKU > Warehouse
+PASS - Clear filter resets brand filter
+PASS - Targeted report logic test passed with mock AUKEY / EarFun data
+
+No SQL migration is required for V1.6.5.
+Full Next.js npm build could not be executed in the current environment because its internal npm registry does not contain @supabase/supabase-js. No package dependencies were changed in this release.
