@@ -1,3 +1,2 @@
-'use client'
-import {useEffect,useState} from 'react';import Protected from '@/components/Protected';import {createClient} from '@/lib/supabase/client'
-export default function Page(){const[rows,setRows]=useState<any[]>([]);useEffect(()=>{createClient().from('audit_logs').select('*').order('created_at',{ascending:false}).limit(100).then(({data})=>setRows(data||[]))},[]);return <Protected><div className="page-head"><div><div className="page-title">ประวัติการทำรายการ</div><div className="muted">ตรวจสอบกิจกรรมล่าสุดในระบบ</div></div></div><div className="card table-wrap"><table className="table"><thead><tr><th>เวลา</th><th>กิจกรรม</th><th>ประเภท</th><th>รายละเอียด</th></tr></thead><tbody>{rows.length?rows.map(x=><tr key={x.id}><td>{new Date(x.created_at).toLocaleString('th-TH')}</td><td><b>{x.action}</b></td><td>{x.entity_type||'-'}</td><td>{JSON.stringify(x.details||{})}</td></tr>):<tr><td colSpan={4} className="empty-state">ยังไม่มีประวัติ</td></tr>}</tbody></table></div></Protected>}
+import { redirect } from 'next/navigation'
+export default function Page(){redirect('/workspace#audit')}

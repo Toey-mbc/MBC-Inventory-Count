@@ -1,0 +1,22 @@
+MBC Inventory Count - ขั้นตอน Deploy
+=====================================
+
+1) อัปโหลดไฟล์ทั้งหมดในโฟลเดอร์นี้ไว้ที่ Root ของ GitHub Repository
+2) ฐานข้อมูลเดิม: รัน RUN_THIS_SQL_PRODUCTION_UPGRADE.sql ใน Supabase SQL Editor
+   ฐานข้อมูลใหม่: รัน supabase/migrations/001_initial.sql ถึง 007_production_workspace.sql ตามลำดับ
+3) สร้าง Admin คนแรกใน Supabase Auth
+   Email: admin@mbc.internal
+   Password: Toey1234
+   Auto Confirm User: เปิด
+4) รันใน SQL Editor:
+   select public.promote_first_admin('admin@mbc.internal');
+5) ตั้งค่า Environment Variables ใน Vercel:
+   NEXT_PUBLIC_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+   SUPABASE_SERVICE_ROLE_KEY
+6) Deploy โดยปิด Build Cache ในรอบแรก
+7) Login ด้วย Username: admin / Password: Toey1234
+8) เพิ่มผู้ใช้อื่นจากเมนู ผู้ใช้งานและสิทธิ์ ภายในระบบ
+
+อ่านรายละเอียดทั้งหมดใน DEPLOY_GUIDE_TH.md
+ตรวจรายการก่อนใช้งานจริงใน PRODUCTION_CHECKLIST_TH.md

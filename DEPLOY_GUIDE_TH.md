@@ -1,27 +1,49 @@
-# คู่มือ Deploy MBC Inventory Online V1.3
+# คู่มือติดตั้ง MBC Inventory Count
 
-## 1. สร้าง Supabase Project
+## 1. สำรองข้อมูลก่อนอัปเกรด
 
-สร้าง Project แล้วเก็บค่าต่อไปนี้:
+ก่อนเปลี่ยนไฟล์หรือรัน SQL ให้เข้าสู่ระบบด้วย Admin แล้วเปิด:
 
-- Project URL
-- Publishable Key หรือ Anon Key
-- Service Role Key
+**จัดการข้อมูล → ดาวน์โหลด Backup JSON**
 
-Service Role Key เป็นความลับสูง ใช้เฉพาะ Environment Variables ฝั่ง Server ของ Vercel เท่านั้น
+เก็บไฟล์ไว้จนกว่าจะตรวจสอบระบบหลัง Deploy เสร็จ
 
-## 2. สร้างฐานข้อมูล
+## 2. อัปเกรดฐานข้อมูล Supabase
 
-เข้า Supabase > SQL Editor แล้วรันตามลำดับ:
+### กรณีมีฐานข้อมูลเดิมอยู่แล้ว
 
-1. `supabase/migrations/001_initial.sql`
-2. `supabase/migrations/002_admin_user_management.sql`
+1. เข้า Supabase Dashboard
+2. เปิด **SQL Editor**
+3. เปิดไฟล์ `RUN_THIS_SQL_PRODUCTION_UPGRADE.sql`
+4. คัดลอก SQL ทั้งหมดไปวาง
+5. กด **Run**
 
-## 3. สร้าง Admin คนแรกใน Supabase
+SQL ชุดนี้จะเพิ่ม:
 
-เข้า Supabase > Authentication > Users > Add user
+- สิทธิ์ `read` และ `edit`
+- Shared Workspace State
+- Append-only Scan Event
+- ข้อมูลตั้งต้นของรอบตรวจนับ
+- RLS และฟังก์ชันตรวจสิทธิ์
+- Realtime สำหรับ Workspace และ Scan Event
 
-กรอก:
+SQL สามารถรันซ้ำได้ และไม่ลบสินค้า ยอดสต๊อก รอบตรวจนับ หรือบัญชีผู้ใช้เดิม
+
+### กรณีสร้าง Supabase Project ใหม่
+
+รันไฟล์ในโฟลเดอร์ `supabase/migrations` ตามลำดับ:
+
+1. `001_initial.sql`
+2. `002_admin_user_management.sql`
+3. `003_locations_management.sql`
+4. `004_detailed_inventory_report.sql`
+5. `005_report_schema_repair.sql`
+6. `006_report_location_sku_drilldown.sql`
+7. `007_production_workspace.sql`
+
+## 3. สร้าง Admin คนแรก
+
+เข้า **Supabase → Authentication → Users → Add user**
 
 ```text
 Email: admin@mbc.internal
@@ -29,72 +51,117 @@ Password: Toey1234
 Auto Confirm User: เปิด
 ```
 
-หลังสร้าง User แล้ว กลับไป SQL Editor และรัน:
+จากนั้นเปิด SQL Editor แล้วรัน:
 
 ```sql
 select public.promote_first_admin('admin@mbc.internal');
 ```
 
-คำสั่งนี้ใช้ได้เฉพาะตอนที่ระบบยังไม่มี Active Admin เพื่อป้องกันการยกระดับสิทธิ์โดยไม่ตั้งใจ
-
-## 4. ตั้งค่า Vercel
-
-เพิ่ม Environment Variables:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
-```
-
-ตั้งค่าครบแล้ว Redeploy
-
-## 5. Login
-
-หน้า Login กรอก:
+หน้า Login ใช้:
 
 ```text
 Username: admin
 Password: Toey1234
 ```
 
-ไม่ต้องกรอก `@mbc.internal`
+ผู้ใช้งานอื่นเพิ่มจากหน้า **ผู้ใช้งานและสิทธิ์** ภายในระบบ ไม่ต้องเพิ่มทีละคนใน Supabase
 
-## 6. เพิ่มผู้ใช้งานอื่น
+## 4. อัปโหลดขึ้น GitHub
 
-หลัง Admin Login:
-
-1. เปิดเมนู **ผู้ใช้งาน**
-2. กดเพิ่มผู้ใช้งาน
-3. กรอก Username, ชื่อ, Role และรหัสผ่านชั่วคราว
-4. กดบันทึก
-
-ผู้ใช้ใหม่ Login ได้ทันที โดยไม่ต้องเข้า Supabase Dashboard
-
-กรณีใช้รหัสชั่วคราว `1234` ระบบจะจัดเก็บเป็นรหัสภายในที่ผ่านข้อกำหนดของ Supabase แต่หน้า Login ยังคงใช้ `1234`
-
-## 7. การตั้งค่า Role
-
-- Admin: สิทธิ์สูงสุด
-- Warehouse Manager: จัดการคลังและรอบตรวจนับ
-- Sale Support: สิทธิ์เท่ากับ Warehouse Manager
-- Counter: ตรวจนับสินค้า
-- Viewer: อ่านอย่างเดียว
-
-## 8. ข้อควรระวัง
-
-- ห้ามใส่ Service Role Key ใน GitHub
-- ห้ามตั้งชื่อตัวแปรเป็น `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`
-- ไฟล์ `.env.local` ต้องไม่ถูก Commit
-- ควรเปลี่ยนรหัสผ่านชั่วคราวก่อนใช้งาน Production
-
-
-## อัปเดตฐานข้อมูลสำหรับหน้ารายงาน V1.6.0
-
-หลังจากรัน Migration 001-003 แล้ว ให้เปิด Supabase SQL Editor และรันไฟล์:
+นำไฟล์ทั้งหมดภายในโฟลเดอร์โปรเจกต์วางไว้ที่ Root ของ Repository โดยต้องเห็นไฟล์เหล่านี้ที่หน้าแรกของ Repository:
 
 ```text
-supabase/migrations/004_detailed_inventory_report.sql
+app/
+components/
+legacy/
+lib/
+scripts/
+supabase/
+package.json
+next.config.mjs
+tsconfig.json
+vercel.json
 ```
 
-ไฟล์นี้สร้าง Report View และ Index สำหรับรายงานระดับ SKU และโลเคชั่น หากยังไม่รัน หน้าเว็บมีระบบอ่านจากตารางหลักสำรองให้ แต่ควรรันก่อนใช้งานจริงเพื่อให้โหลดเร็วและเสถียรกว่า
+ห้ามมีไฟล์เก่าต่อไปนี้:
+
+```text
+next.config.ts
+typecheck-stubs.d.ts
+tsconfig.internal.json
+```
+
+## 5. ตั้งค่า Vercel
+
+เชื่อม GitHub Repository กับ Vercel และกำหนด:
+
+```text
+Framework Preset: Next.js
+Install Command: npm install
+Build Command: npm run build
+```
+
+เพิ่ม Environment Variables ใน **Production, Preview และ Development**:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+จากนั้น Deploy โดยไม่ใช้ Build Cache ในรอบแรก
+
+## 6. เพิ่มผู้ใช้งาน
+
+Admin เปิด **ผู้ใช้งานและสิทธิ์ → เพิ่มผู้ใช้งาน** แล้วกรอก:
+
+- Username
+- ชื่อ-นามสกุล
+- สิทธิ์อ่านหรือแก้ไข
+- รหัสผ่านชั่วคราว
+
+กรณีใช้รหัสผ่านชั่วคราว `1234` ระบบจะแปลงเป็นรหัสภายในที่ Supabase ยอมรับ ผู้ใช้ยัง Login ด้วย `1234` และระบบบังคับให้เปลี่ยนรหัสผ่านหลังเข้าสู่ระบบครั้งแรก
+
+## 7. สร้างรอบตรวจนับ
+
+เปิด **รอบตรวจนับ → สร้างรอบตรวจนับ** แล้วเลือกวิธีข้อมูลตั้งต้น
+
+### ใช้ข้อมูลปัจจุบันจากระบบ
+
+ระบบจะล็อกยอดสินค้าคงคลังของคลังที่เลือก ณ เวลาบันทึกรอบ ยอดที่เปลี่ยนภายหลังจะไม่ย้อนมาเปลี่ยนข้อมูลตั้งต้นของรอบ
+
+### นำเข้าข้อมูลตั้งต้นเอง
+
+1. เลือกคลังที่ต้องการตรวจนับ
+2. เลือก **นำเข้าข้อมูลตั้งต้นเอง**
+3. ดาวน์โหลดแบบฟอร์ม
+4. เตรียม Excel/CSV
+5. เลือกไฟล์
+6. ตรวจตัวอย่างและยอดรวม
+7. บันทึกรอบ
+
+คอลัมน์ที่รองรับ:
+
+| คอลัมน์ | รายละเอียด |
+|---|---|
+| Barcode หรือ SKU | ต้องตรงกับ Product Master |
+| Warehouse Code | ต้องเป็นคลังที่ถูกเลือกในรอบ |
+| Location Code | ต้องอยู่ในคลังที่ระบุ |
+| Condition | ต้องตรงกับข้อมูลสภาพสินค้า |
+| Quantity | จำนวนเต็มตั้งแต่ 0 ขึ้นไป |
+
+ระบบจะไม่ยอมบันทึกหากพบสินค้า คลัง โลเคชั่น สภาพ หรือจำนวนที่ไม่ถูกต้อง
+
+## 8. เมนูล้างข้อมูลสำหรับ Admin
+
+เปิด **จัดการข้อมูล → ล้างข้อมูลระบบ**
+
+- **ล้างข้อมูลตรวจนับ** เก็บ Product Master, คลัง และโลเคชั่น
+- **ล้างข้อมูลธุรกรรม** เก็บ Master Data และผู้ใช้งาน
+- **ล้างข้อมูลทั้งหมด** เก็บบัญชีผู้ใช้, Audit Log และการตั้งค่าระบบ
+
+ทุกคำสั่งต้องพิมพ์ข้อความยืนยันและถูกบันทึกลง Audit Log
+
+## 9. ตรวจสอบหลัง Deploy
+
+ใช้รายการใน `PRODUCTION_CHECKLIST_TH.md` ตรวจสอบก่อนเริ่มตรวจนับจริง

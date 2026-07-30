@@ -4,12 +4,12 @@ import {useRouter} from 'next/navigation'
 import {createClient} from '@/lib/supabase/client'
 
 const AUTH_DOMAIN='mbc.internal'
-const UAT_PASSWORD_ALIAS='1234'
-const UAT_AUTH_PASSWORD='MBC@1234'
+const SHORT_PASSWORD_ALIAS='1234'
+const SHORT_PASSWORD_INTERNAL='MBC@1234'
 
 export default function Login(){
- const[username,setUsername]=useState('admin')
- const[password,setPassword]=useState('Toey1234')
+ const[username,setUsername]=useState('')
+ const[password,setPassword]=useState('')
  const[showPassword,setShowPassword]=useState(false)
  const[error,setError]=useState('')
  const[busy,setBusy]=useState(false)
@@ -22,17 +22,22 @@ export default function Login(){
   const clean=username.trim().toLowerCase().replace(/\s+/g,'')
   if(!clean){setError('กรุณากรอกชื่อผู้ใช้');setBusy(false);return}
   const email=clean.includes('@')?clean:`${clean}@${AUTH_DOMAIN}`
-  // Supabase hosted projects require a longer password. During UAT, users still type 1234;
-  // the app maps it to the longer internal password created by the seed script.
-  const authPassword=password===UAT_PASSWORD_ALIAS?UAT_AUTH_PASSWORD:password
+  const authPassword=password===SHORT_PASSWORD_ALIAS?SHORT_PASSWORD_INTERNAL:password
   try{
-   const {error}=await createClient().auth.signInWithPassword({email,password:authPassword})
+   const supabase=createClient()
+   const {data,error}=await supabase.auth.signInWithPassword({email,password:authPassword})
    if(error){
     console.error('Login failed:',error.message)
-    setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ Username, Password และสิทธิ์ Admin ใน Supabase')
+    setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ Username และ Password')
    }else{
-    router.replace('/workspace')
-    router.refresh()
+    const {data:profile}=await supabase.from('profiles').select('active,must_change_password').eq('id',data.user.id).maybeSingle()
+    if(profile?.active===false){
+     await supabase.auth.signOut()
+     setError('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ')
+    }else{
+     router.replace(profile?.must_change_password?'/change-password':'/workspace')
+     router.refresh()
+    }
    }
   }catch(err){
    console.error(err)

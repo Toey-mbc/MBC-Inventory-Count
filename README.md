@@ -1,66 +1,68 @@
-# MBC Inventory Online V1.6.3
+# MBC Inventory Count
 
-เวอร์ชันนี้คงหน้า Login เดิม และนำหน้าระบบภายในฉบับเต็มจาก `MBC Inventory Count UAT V7.2` กลับมาใช้งานทั้งหมด แทนหน้าตัวอย่าง/Placeholder ของ V1.4
+ระบบตรวจนับสินค้าคงคลังออนไลน์สำหรับ MBC Communications พัฒนาด้วย Next.js และ Supabase รองรับการใช้งานหลายอุปกรณ์ การตรวจนับด้วยบาร์โค้ด การจัดการสิทธิ์ รายงานสินค้า และการตรวจสอบย้อนหลัง
 
-## จุดสำคัญ
-- Login ผ่าน Supabase Auth
-- หลัง Login เข้าหน้า `/workspace`
-- ภายในเป็น UI ฉบับเต็ม: Dashboard, รอบตรวจนับ, ยิงบาร์โค้ด, ผลตรวจนับ, Unknown Barcode, โอนย้าย, Stock, Product, Master Data, Users, Reports, Audit, Backup และ Settings
-- Responsive Desktop/Tablet/Mobile ตาม HTML V7.2
-- ปุ่มออกจากระบบเชื่อมกลับไป Supabase Auth
+## ความสามารถหลัก
 
-## หมายเหตุด้านข้อมูล
-หน้าภายในฉบับเต็มยังใช้ IndexedDB/localStorage ตามระบบ UAT เดิม เพื่อให้ฟังก์ชันครบและไม่หายไปเหมือน V1.4 ส่วนการย้ายข้อมูลทุกโมดูลให้ใช้ Supabase Realtime ต้องทำเป็นขั้นถัดไปโดยเปลี่ยน data adapter ทีละโมดูล โดยไม่เปลี่ยนหน้าตาและ workflow นี้
+- เข้าสู่ระบบด้วย Username และ Password
+- ผู้ดูแลระบบกำหนดสิทธิ์ผู้ใช้เป็น **อ่าน** หรือ **แก้ไข**
+- รอบตรวจนับเลือกข้อมูลตั้งต้นได้ 2 วิธี
+  - ใช้ยอดสินค้าคงคลังปัจจุบันจากระบบ
+  - นำเข้า Excel/CSV ที่ผู้สร้างรอบจัดเตรียมเอง
+- สแกนบาร์โค้ดด้วย USB/Bluetooth Scanner หรือกล้องมือถือ
+- Scan Event แบบเพิ่มรายการ ไม่เขียนทับประวัติเดิม
+- เก็บรายการรอซิงก์เมื่อการเชื่อมต่อสะดุด และส่งซ้ำแบบไม่เพิ่มยอดซ้ำ
+- รายงาน Barcode, SKU, แบรนด์, ชื่อสินค้า, รายละเอียด, คลัง, โลเคชั่น, สภาพสินค้า และจำนวน
+- ส่งออก Excel และพิมพ์/บันทึก PDF
+- ผู้ดูแลระบบสำรอง กู้คืน และล้างข้อมูลตามขอบเขตได้
+- Audit Log สำหรับการสร้าง แก้ไข อนุมัติ ล้างข้อมูล และจัดการผู้ใช้
 
-## V1.5.1 Build Fix
+## สิทธิ์การใช้งาน
 
-- Removed the unused `@supabase/ssr` dependency.
-- Browser authentication now uses `@supabase/supabase-js` directly.
-- Restored the local `createClient()` export used by all pages and components.
-- Replaced `next.config.ts` with `next.config.mjs` for simpler Vercel builds.
+| สิทธิ์ | การใช้งาน |
+|---|---|
+| อ่าน | ดู Dashboard, สินค้าคงคลัง, รอบตรวจนับ, ผลตรวจนับ, รายงาน และส่งออกข้อมูล โดยไม่สามารถบันทึกการเปลี่ยนแปลง |
+| แก้ไข | ตรวจนับ สร้างรอบ จัดการสินค้า/คลัง/โลเคชั่น โอนย้าย ตรวจสอบ และอนุมัติรายการ |
+| Admin | สิทธิ์เต็ม รวมถึงจัดการผู้ใช้ ตั้งค่าระบบ สำรอง/กู้คืน และล้างข้อมูล |
 
+ผู้ใช้งานทั่วไปเลือกได้เฉพาะ **อ่าน** หรือ **แก้ไข** ส่วน Admin เป็นบัญชีผู้ดูแลระบบที่ตั้งค่าครั้งแรก
 
-## รายงานแบบละเอียด V1.6.1
+## โครงสร้างข้อมูลออนไลน์
 
-หน้า **รายงาน** รองรับการดูข้อมูลระดับ `รอบตรวจนับ → คลัง → โลเคชั่น → SKU → สภาพสินค้า` พร้อมสรุปตาม SKU, สรุปตามโลเคชั่น, Drill-down และส่งออก Excel 4 Sheet
+- `workspace_states` เก็บข้อมูลหลักและสถานะการทำงานร่วมกัน
+- `workspace_scan_events` เก็บ Scan Event แบบ Append-only เพื่อรองรับรายการจำนวนมาก
+- `profiles` เก็บสิทธิ์และสถานะผู้ใช้
+- `audit_logs` เก็บประวัติการทำรายการ
+- ตารางหลักเดิม เช่น `products`, `warehouses`, `locations`, `count_rounds` ยังคงรองรับการพัฒนาต่อแบบ Normalize
 
-หลัง SQL เดิม ให้รันเพิ่มเติม:
+## การติดตั้ง
+
+โปรดอ่าน [DEPLOY_GUIDE_TH.md](DEPLOY_GUIDE_TH.md) และดำเนินการตามลำดับ
+
+สำหรับฐานข้อมูลที่ติดตั้งระบบรุ่นก่อนหน้าแล้ว ให้รันไฟล์:
 
 ```text
-supabase/migrations/004_detailed_inventory_report.sql
+RUN_THIS_SQL_PRODUCTION_UPGRADE.sql
 ```
 
+สำหรับ Supabase Project ใหม่ ให้รันไฟล์ใน `supabase/migrations` ตั้งแต่ `001_initial.sql` ถึง `007_production_workspace.sql` ตามลำดับ
 
-## V1.6.1 - Report schema repair
+## Environment Variables
 
-If Supabase shows `column locations.zone does not exist`, run `RUN_THIS_SQL_V1_6_1.sql` in SQL Editor. The script adds the missing location fields and recreates `inventory_count_report`. It is idempotent and can be run more than once.
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
 
+`SUPABASE_SERVICE_ROLE_KEY` ใช้เฉพาะฝั่ง Server ห้ามเติม `NEXT_PUBLIC_` และห้ามนำไปใส่ใน Browser Code
 
-## V1.6.2 - Vercel page type build fix
+## ตรวจสอบโปรเจกต์ก่อน Deploy
 
-แก้ Build Error ที่รายงานว่า `app/audit/page.tsx` คืนค่า `Element` ไม่ตรงกับ `ReactNode` โดยตัดไฟล์ TypeScript stub เก่าที่ประกาศชนกับ React/Next.js จริง และเพิ่มการป้องกันทั้งใน `tsconfig.json` และ `scripts/prebuild-clean.mjs` เพื่อให้การวางไฟล์ทับ Repository เดิมไม่ทำให้ Error กลับมาอีก
+```bash
+npm install
+npm run check:production
+npm run build
+```
 
-## V1.6.3 — รายงาน SKU × Location
-
-หน้า Reports มีรายละเอียดระดับรอบตรวจนับ → คลัง → โลเคชั่น → SKU → สภาพสินค้า พร้อมมุมมองเจาะลึก Location → SKU และส่งออก Excel หลาย Sheet ดูรายละเอียดใน `REPORT_V1_6_3_TH.md`.
-
-## V1.6.4 — Product-first Report
-
-หน้า **รายงาน** ภายใน Workspace ได้รับการออกแบบใหม่ให้เห็นข้อมูลสำคัญในตารางเดียว ได้แก่ Barcode, SKU, ชื่อสินค้า, รายละเอียด, คลัง, โลเคชั่น, สภาพสินค้า, จำนวนตามระบบ, จำนวนที่นับได้ และผลต่าง
-
-มุมมองรายงาน:
-
-- รายละเอียดสินค้า
-- SKU × คลัง
-- สรุปตามคลัง
-- สินค้าขาด / เกิน
-- สินค้ายังไม่ได้นับ
-- ประวัติรอบตรวจนับ
-
-มีตัวกรองรอบตรวจนับ คลัง โลเคชั่น สภาพสินค้า การเรียงข้อมูล และค้นหาจาก Barcode / SKU / ชื่อ / รายละเอียด / คลัง พร้อมส่งออก Excel ตามเงื่อนไขที่เลือก
-
-การอัปเดตนี้แก้เฉพาะหน้า Workspace และ **ไม่ต้องรัน SQL เพิ่ม**
-
-## Update V1.6.5
-
-หน้า Reports เพิ่มตัวกรองแบรนด์ คอลัมน์แบรนด์ KPI แบรนด์ การเรียงตามแบรนด์ และส่งออกแบรนด์ใน Excel โดยไม่ต้องรัน SQL เพิ่ม
+คำสั่ง `check:production` ตรวจโครงสร้างไฟล์ ฟังก์ชันสำคัญ ข้อความหน้าระบบ และ JavaScript ภายใน Workspace ก่อนเริ่ม Build
