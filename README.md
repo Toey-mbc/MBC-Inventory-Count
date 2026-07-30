@@ -18,3 +18,19 @@
 - Browser authentication now uses `@supabase/supabase-js` directly.
 - Restored the local `createClient()` export used by all pages and components.
 - Replaced `next.config.ts` with `next.config.mjs` for simpler Vercel builds.
+
+
+## รายงานแบบละเอียด V1.6.1
+
+หน้า **รายงาน** รองรับการดูข้อมูลระดับ `รอบตรวจนับ → คลัง → โลเคชั่น → SKU → สภาพสินค้า` พร้อมสรุปตาม SKU, สรุปตามโลเคชั่น, Drill-down และส่งออก Excel 4 Sheet
+
+หลัง SQL เดิม ให้รันเพิ่มเติม:
+
+```text
+supabase/migrations/004_detailed_inventory_report.sql
+```
+
+
+## V1.6.1 - Report schema repair
+
+If Supabase shows `column locations.zone does not exist`, run `RUN_THIS_SQL_V1_6_1.sql` in SQL Editor. The script adds the missing location fields and recreates `inventory_count_report`. It is idempotent and can be run more than once.

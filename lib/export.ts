@@ -3,10 +3,30 @@ export async function exportXlsx(
   filename: string,
   sheetName = 'Report',
 ) {
+  return exportWorkbook([{ name: sheetName, rows }], filename)
+}
+
+export async function exportWorkbook(
+  sheets: { name: string; rows: Record<string, unknown>[] }[],
+  filename: string,
+) {
   const XLSX = await import('xlsx')
-  const sheet = XLSX.utils.json_to_sheet(rows)
   const book = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(book, sheet, sheetName.slice(0, 31))
+
+  for (const item of sheets) {
+    const rows = item.rows.length > 0 ? item.rows : [{ ข้อมูล: 'ไม่พบข้อมูล' }]
+    const sheet = XLSX.utils.json_to_sheet(rows)
+    const headers = Object.keys(rows[0] || {})
+    sheet['!cols'] = headers.map((header) => {
+      const maxLength = rows.reduce((max, row) => {
+        const value = row[header]
+        return Math.max(max, String(value ?? '').length)
+      }, header.length)
+      return { wch: Math.min(Math.max(maxLength + 2, 10), 45) }
+    })
+    XLSX.utils.book_append_sheet(book, sheet, item.name.slice(0, 31))
+  }
+
   XLSX.writeFile(book, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`)
 }
 

@@ -1,0 +1,6 @@
+MBC Inventory Online V1.6.0 verification
+
+PASS: TypeScript strict check using tsc --noEmit
+PASS: Report page supports detail, SKU summary, location summary, filters, drill-down and Excel export
+PASS: Fallback reads scan_totals if inventory_count_report view has not been installed
+NOTE: npm install could not run in this environment because the internal package registry did not contain @supabase/supabase-js@2.57.4. This is an environment registry limitation, not a TypeScript error.

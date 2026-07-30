@@ -9,11 +9,16 @@ export default function WorkspaceClient({ html }: { html: string }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    let active = true
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
+
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (!active) return
       if (!data.user) router.replace('/login')
       else setReady(true)
-    })
+    }
+    void checkSession()
 
     const onMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'MBC_LOGOUT') {
@@ -23,7 +28,10 @@ export default function WorkspaceClient({ html }: { html: string }) {
       }
     }
     window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
+    return () => {
+      active = false
+      window.removeEventListener('message', onMessage)
+    }
   }, [router])
 
   if (!ready) {

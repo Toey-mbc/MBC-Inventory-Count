@@ -87,3 +87,14 @@ Password: Toey1234
 - ห้ามตั้งชื่อตัวแปรเป็น `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`
 - ไฟล์ `.env.local` ต้องไม่ถูก Commit
 - ควรเปลี่ยนรหัสผ่านชั่วคราวก่อนใช้งาน Production
+
+
+## อัปเดตฐานข้อมูลสำหรับหน้ารายงาน V1.6.0
+
+หลังจากรัน Migration 001-003 แล้ว ให้เปิด Supabase SQL Editor และรันไฟล์:
+
+```text
+supabase/migrations/004_detailed_inventory_report.sql
+```
+
+ไฟล์นี้สร้าง Report View และ Index สำหรับรายงานระดับ SKU และโลเคชั่น หากยังไม่รัน หน้าเว็บมีระบบอ่านจากตารางหลักสำรองให้ แต่ควรรันก่อนใช้งานจริงเพื่อให้โหลดเร็วและเสถียรกว่า

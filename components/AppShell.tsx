@@ -19,8 +19,10 @@ const nav:NavItem[]=[
  {href:'/transfers',label:'โอนย้ายสินค้า',group:'งานหลัก',icon:FolderSync},
  {href:'/stock',label:'สินค้าคงคลัง',group:'ข้อมูล',icon:Boxes},
  {href:'/products',label:'สินค้า',group:'ข้อมูล',icon:Package},
+ {href:'/locations',label:'คลังและโลเคชั่น',group:'ข้อมูล',icon:Warehouse},
  {href:'/masters',label:'ข้อมูลหลัก',group:'ข้อมูล',icon:Tags},
  {href:'/users',label:'ผู้ใช้งานและสิทธิ์',group:'ข้อมูล',icon:Users},
+ {href:'/variance',label:'ผลต่างสต๊อก',group:'ตรวจสอบ',icon:PackageSearch},
  {href:'/reports',label:'รายงาน',group:'ตรวจสอบ',icon:FileSpreadsheet},
  {href:'/audit',label:'ประวัติการทำรายการ',group:'ตรวจสอบ',icon:History},
  {href:'/backup',label:'Backup / Restore',group:'ระบบ',icon:ShieldCheck},
@@ -35,9 +37,11 @@ const titles:Record<string,[string,string]>={
  '/transfers':['โอนย้ายสินค้า','โอนระหว่างคลัง โลเคชั่น และสภาพสินค้า'],
  '/stock':['สินค้าคงคลัง','ยอดตามสินค้า คลัง โลเคชั่น และสภาพ'],
  '/products':['สินค้า','จัดการ SKU บาร์โค้ด แบรนด์ และหมวดหมู่'],
- '/masters':['ข้อมูลหลัก','แบรนด์ หมวดหมู่ คลัง โลเคชั่น และสภาพสินค้า'],
+ '/locations':['คลังและโลเคชั่น','จัดการคลัง พื้นที่จัดเก็บ และ QR Code'],
+ '/masters':['ข้อมูลหลัก','แบรนด์ หมวดหมู่ และสภาพสินค้า'],
  '/users':['ผู้ใช้งานและสิทธิ์','เพิ่มผู้ใช้ กำหนดบทบาท และระงับบัญชี'],
- '/reports':['รายงาน','รายงานสรุปและส่งออกข้อมูล'],
+ '/variance':['ผลต่างสต๊อก','เปรียบเทียบยอดระบบกับยอดตรวจนับจริง'],
+ '/reports':['รายงาน','เจาะรายละเอียดถึง SKU โลเคชั่น และสภาพสินค้า'],
  '/audit':['ประวัติการทำรายการ','ตรวจสอบการสแกน แก้ไข และอนุมัติ'],
  '/backup':['Backup / Restore','สำรอง ตรวจสุขภาพ และล้างข้อมูลทดสอบ'],
  '/settings':['ตั้งค่าระบบ','ตั้งค่าการสแกน เสียง และอุปกรณ์'],
@@ -45,7 +49,7 @@ const titles:Record<string,[string,string]>={
 export default function AppShell({children}:{children:React.ReactNode}){
  const pathname=usePathname(); const router=useRouter(); const supabase=useMemo(()=>createClient(),[])
  const [open,setOpen]=useState(false); const [user,setUser]=useState('ผู้ใช้งาน')
- useEffect(()=>{supabase.auth.getUser().then(({data})=>setUser(data.user?.email?.split('@')[0]||'ผู้ใช้งาน'))},[supabase])
+ useEffect(()=>{let active=true;const loadUser=async()=>{const {data}=await supabase.auth.getUser();if(active)setUser(data.user?.email?.split('@')[0]||'ผู้ใช้งาน')};void loadUser();return()=>{active=false}},[supabase])
  useEffect(()=>setOpen(false),[pathname])
  async function logout(){await supabase.auth.signOut();router.replace('/login')}
  const [title,subtitle]=titles[pathname]||['MBC Inventory','ระบบตรวจนับสินค้าคงคลัง']

@@ -1,0 +1,17 @@
+MBC Inventory Online V1.6.1 verification
+
+1. TypeScript strict check: PASSED
+   Command: tsc --noEmit
+
+2. Report migration inspection: PASSED
+   - Adds public.locations.zone before the report view uses it.
+   - Adds the remaining location-management columns required by the app.
+   - Recreates public.inventory_count_report safely.
+   - Safe to run repeatedly.
+
+3. Frontend compatibility: PASSED
+   - Reports metadata falls back when locations.zone is absent.
+   - Reports data falls back from the report view to live tables.
+   - Live-table query falls back without zone when necessary.
+
+4. npm install / next build could not be executed in this sandbox because its internal npm registry does not contain @supabase/supabase-js. This is an environment registry limitation, not a TypeScript error. Vercel uses the public npm registry.
