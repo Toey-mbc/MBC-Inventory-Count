@@ -1,0 +1,2 @@
+import { Construction } from 'lucide-react'
+export default function ModulePlaceholder({title,description,children}:{title:string;description:string;children?:React.ReactNode}){return <><div className="page-head"><div><div className="page-title">{title}</div><div className="muted">{description}</div></div></div>{children||<div className="card empty-state"><Construction size={44}/><h3>เตรียมโครงสร้างโมดูลแล้ว</h3><p>หน้าตาใช้รูปแบบเดียวกับ HTML UAT เดิม และจะเชื่อมฟังก์ชัน Supabase ในลำดับพัฒนาถัดไป</p></div>}</>}

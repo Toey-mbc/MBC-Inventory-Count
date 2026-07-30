@@ -107,55 +107,27 @@ export async function PATCH(request: NextRequest) {
     const id = String(body.id ?? '')
     if (!id) return NextResponse.json({ error: 'ไม่พบ User ID' }, { status: 400 })
 
-    const validRoles = ['admin', 'warehouse_manager', 'sale_support', 'counter', 'viewer']
-    if (typeof body.role === 'string' && !validRoles.includes(body.role)) {
-      return NextResponse.json({ error: 'Role ไม่ถูกต้อง' }, { status: 400 })
-    }
-    if (typeof body.password === 'string' && body.password && body.password.length < 4) {
-      return NextResponse.json({ error: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร' }, { status: 400 })
-    }
-
-    const { data: target, error: targetError } = await auth.supabase
-      .from('profiles')
-      .select('id,role,active,email')
-      .eq('id', id)
-      .maybeSingle()
-    if (targetError) throw targetError
-    if (!target) return NextResponse.json({ error: 'ไม่พบผู้ใช้งาน' }, { status: 404 })
-
-    const nextRole = typeof body.role === 'string' ? body.role : target.role
-    const nextActive = typeof body.active === 'boolean' ? body.active : target.active
-    if (id === auth.actorId && (!nextActive || nextRole !== 'admin')) {
-      return NextResponse.json({ error: 'ไม่สามารถระงับหรือลดสิทธิ์บัญชี Admin ที่กำลังใช้งานอยู่' }, { status: 400 })
-    }
-    if (target.role === 'admin' && target.active && (!nextActive || nextRole !== 'admin')) {
-      const { count, error: countError } = await auth.supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'admin')
-        .eq('active', true)
-      if (countError) throw countError
-      if ((count ?? 0) <= 1) {
-        return NextResponse.json({ error: 'ต้องมี Admin ที่เปิดใช้งานอย่างน้อย 1 บัญชี' }, { status: 400 })
-      }
-    }
-
     const update: Record<string, unknown> = {}
     if (typeof body.fullName === 'string') update.full_name = body.fullName.trim()
     if (typeof body.active === 'boolean') update.active = body.active
     if (typeof body.mustChangePassword === 'boolean') update.must_change_password = body.mustChangePassword
-    if (typeof body.role === 'string') update.role = body.role
+    if (typeof body.role === 'string') {
+      const validRoles = ['admin', 'warehouse_manager', 'sale_support', 'counter', 'viewer']
+      if (!validRoles.includes(body.role)) return NextResponse.json({ error: 'Role ไม่ถูกต้อง' }, { status: 400 })
+      update.role = body.role
+    }
     update.updated_at = new Date().toISOString()
 
+    const { error: profileError } = await auth.supabase.from('profiles').update(update).eq('id', id)
+    if (profileError) throw profileError
+
     if (typeof body.password === 'string' && body.password) {
+      if (body.password.length < 4) return NextResponse.json({ error: 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร' }, { status: 400 })
       const { error: passwordError } = await auth.supabase.auth.admin.updateUserById(id, {
         password: internalPassword(body.password),
       })
       if (passwordError) throw passwordError
     }
-
-    const { error: profileError } = await auth.supabase.from('profiles').update(update).eq('id', id)
-    if (profileError) throw profileError
 
     await auth.supabase.from('audit_logs').insert({
       actor_id: auth.actorId,

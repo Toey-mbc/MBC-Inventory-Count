@@ -1,6 +1,6 @@
 export type QueuedScan = {
   p_round_id:string; p_location_id:string; p_condition:string; p_barcode:string;
-  p_quantity:number; p_client_event_id:string; p_device_id:string|null; queued_at:string; last_error?:string
+  p_quantity:number; p_client_event_id:string; p_device_id:string|null; queued_at:string
 }
 const KEY='mbc_scan_queue_v1'
 export function getQueue():QueuedScan[]{
