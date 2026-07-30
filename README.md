@@ -11,3 +11,10 @@
 
 ## หมายเหตุด้านข้อมูล
 หน้าภายในฉบับเต็มยังใช้ IndexedDB/localStorage ตามระบบ UAT เดิม เพื่อให้ฟังก์ชันครบและไม่หายไปเหมือน V1.4 ส่วนการย้ายข้อมูลทุกโมดูลให้ใช้ Supabase Realtime ต้องทำเป็นขั้นถัดไปโดยเปลี่ยน data adapter ทีละโมดูล โดยไม่เปลี่ยนหน้าตาและ workflow นี้
+
+## V1.5.1 Build Fix
+
+- Removed the unused `@supabase/ssr` dependency.
+- Browser authentication now uses `@supabase/supabase-js` directly.
+- Restored the local `createClient()` export used by all pages and components.
+- Replaced `next.config.ts` with `next.config.mjs` for simpler Vercel builds.
