@@ -11,7 +11,7 @@ create table public.profiles (
   email text not null,
   full_name text not null default '',
   role public.app_role not null default 'counter',
-  must_change_password boolean not null default true,
+  must_change_password boolean not null default false,
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -125,7 +125,7 @@ begin
  insert into public.profiles(id,email,full_name,role,must_change_password)
  values(new.id,coalesce(new.email,''),coalesce(new.raw_user_meta_data->>'full_name',''),
    coalesce((new.raw_user_meta_data->>'role')::public.app_role,'counter'),
-   coalesce((new.raw_user_meta_data->>'must_change_password')::boolean,true));
+   false);
  return new;
 end $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();

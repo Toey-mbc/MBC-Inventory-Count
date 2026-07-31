@@ -4,6 +4,9 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+const SHORT_PASSWORD_ALIAS = '1234'
+const SHORT_PASSWORD_INTERNAL = 'MBC@1234'
+
 export default function ChangePasswordPage() {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
@@ -15,8 +18,8 @@ export default function ChangePasswordPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError('')
-    if (password.length < 8) {
-      setError('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร')
+    if (password.length < 4) {
+      setError('รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร')
       return
     }
     if (password !== confirmPassword) {
@@ -28,10 +31,9 @@ export default function ChangePasswordPage() {
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser()
       if (authError || !authData.user) throw new Error('Session หมดอายุ กรุณา Login ใหม่')
-      const { error: passwordError } = await supabase.auth.updateUser({ password })
+      const nextPassword = password === SHORT_PASSWORD_ALIAS ? SHORT_PASSWORD_INTERNAL : password
+      const { error: passwordError } = await supabase.auth.updateUser({ password: nextPassword })
       if (passwordError) throw passwordError
-      const { error: profileError } = await supabase.rpc('complete_password_change')
-      if (profileError) throw profileError
       router.replace('/workspace')
       router.refresh()
     } catch (cause) {
@@ -45,7 +47,7 @@ export default function ChangePasswordPage() {
     <form className="login-card stack" onSubmit={submit}>
       <div className="login-heading">
         <div className="login-mark">MBC</div>
-        <div><h1>ตั้งรหัสผ่านใหม่</h1><div className="muted">กรุณาเปลี่ยนรหัสผ่านชั่วคราวก่อนเริ่มใช้งาน</div></div>
+        <div><h1>เปลี่ยนรหัสผ่าน</h1><div className="muted">ตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ</div></div>
       </div>
       {error && <div className="error">{error}</div>}
       <div className="field"><label>รหัสผ่านใหม่</label><input type="password" value={password} onChange={event => setPassword(event.target.value)} autoComplete="new-password" required /></div>

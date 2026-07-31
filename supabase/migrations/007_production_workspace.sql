@@ -4,6 +4,14 @@
 alter table public.profiles
   add column if not exists access_mode text not null default 'edit';
 
+-- Passwords assigned by Admin can be used immediately. No forced password change.
+alter table public.profiles
+  alter column must_change_password set default false;
+
+update public.profiles
+set must_change_password = false
+where must_change_password is distinct from false;
+
 update public.profiles
 set access_mode = 'read'
 where role = 'viewer' and access_mode <> 'read';
@@ -195,7 +203,7 @@ begin
    coalesce(new.raw_user_meta_data->>'full_name',''),
    coalesce((new.raw_user_meta_data->>'role')::public.app_role,'counter'),
    case when new.raw_user_meta_data->>'access_mode' = 'read' then 'read' else 'edit' end,
-   coalesce((new.raw_user_meta_data->>'must_change_password')::boolean,true)
+   false
  )
  on conflict (id) do update set
    email = excluded.email,
@@ -403,24 +411,6 @@ on conflict (id) do nothing;
 
 notify pgrst, 'reload schema';
 
-create or replace function public.complete_password_change()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if auth.uid() is null then raise exception 'Not authenticated'; end if;
-  update public.profiles
-  set must_change_password = false,
-      updated_at = now()
-  where id = auth.uid() and active = true;
-  if not found then raise exception 'Active profile not found'; end if;
-  insert into public.audit_logs(actor_id,action,entity_type,entity_id,details)
-  values(auth.uid(),'change_password','profile',auth.uid()::text,'{}'::jsonb);
-end $$;
-
-revoke all on function public.complete_password_change() from public;
-grant execute on function public.complete_password_change() to authenticated;
+drop function if exists public.complete_password_change();
 
 notify pgrst, 'reload schema';

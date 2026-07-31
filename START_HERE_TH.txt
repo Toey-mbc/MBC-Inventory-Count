@@ -3,6 +3,7 @@ MBC Inventory Count - ขั้นตอน Deploy
 
 1) อัปโหลดไฟล์ทั้งหมดในโฟลเดอร์นี้ไว้ที่ Root ของ GitHub Repository
 2) ฐานข้อมูลเดิม: รัน RUN_THIS_SQL_PRODUCTION_UPGRADE.sql ใน Supabase SQL Editor
+   หากต้องการแก้เฉพาะปัญหาบังคับเปลี่ยนรหัส ให้รัน RUN_THIS_SQL_DISABLE_FORCE_PASSWORD_CHANGE.sql
    ฐานข้อมูลใหม่: รัน supabase/migrations/001_initial.sql ถึง 007_production_workspace.sql ตามลำดับ
 3) สร้าง Admin คนแรกใน Supabase Auth
    Email: admin@mbc.internal
@@ -17,6 +18,7 @@ MBC Inventory Count - ขั้นตอน Deploy
 6) Deploy โดยปิด Build Cache ในรอบแรก
 7) Login ด้วย Username: admin / Password: Toey1234
 8) เพิ่มผู้ใช้อื่นจากเมนู ผู้ใช้งานและสิทธิ์ ภายในระบบ
+9) ผู้ใช้ใหม่ Login ด้วยรหัสที่ Admin กำหนดได้ทันที ระบบไม่บังคับเปลี่ยนรหัสผ่าน
 
 อ่านรายละเอียดทั้งหมดใน DEPLOY_GUIDE_TH.md
 ตรวจรายการก่อนใช้งานจริงใน PRODUCTION_CHECKLIST_TH.md

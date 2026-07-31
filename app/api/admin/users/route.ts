@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if ('error' in auth) return auth.error
     const { data, error } = await auth.supabase
       .from('profiles')
-      .select('id,email,full_name,role,access_mode,active,must_change_password,created_at')
+      .select('id,email,full_name,role,access_mode,active,created_at')
       .order('created_at', { ascending: true })
     if (error) throw error
     return NextResponse.json({ users: data ?? [] })
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         full_name: fullName,
         role: 'counter',
         access_mode: accessMode,
-        must_change_password: true,
+        must_change_password: false,
       },
     })
     if (error) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       role: 'counter',
       access_mode: accessMode,
       active: true,
-      must_change_password: true,
+      must_change_password: false,
       updated_at: new Date().toISOString(),
     }).eq('id', data.user.id)
     if (profileError) throw profileError
@@ -115,7 +115,6 @@ export async function PATCH(request: NextRequest) {
       }
       update.active = body.active
     }
-    if (typeof body.mustChangePassword === 'boolean') update.must_change_password = body.mustChangePassword
     if (typeof body.accessMode === 'string' && target.role !== 'admin') {
       update.access_mode = normalizeAccessMode(body.accessMode)
       update.role = 'counter'
@@ -132,6 +131,11 @@ export async function PATCH(request: NextRequest) {
         password: internalPassword(body.password),
       })
       if (passwordError) throw passwordError
+      const { error: clearPasswordFlagError } = await auth.supabase
+        .from('profiles')
+        .update({ must_change_password: false, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (clearPasswordFlagError) throw clearPasswordFlagError
     }
 
     await auth.supabase.from('audit_logs').insert({

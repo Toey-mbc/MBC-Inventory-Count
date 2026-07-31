@@ -12,6 +12,7 @@ const requiredFiles = [
   'legacy/workspace.html',
   'supabase/migrations/007_production_workspace.sql',
   'RUN_THIS_SQL_PRODUCTION_UPGRADE.sql',
+  'RUN_THIS_SQL_DISABLE_FORCE_PASSWORD_CHANGE.sql',
 ]
 
 const missing = requiredFiles.filter(file => !existsSync(file))
@@ -94,13 +95,30 @@ for (const token of [
   'workspace_states',
   'workspace_scan_events',
   'save_workspace_state',
-  'complete_password_change',
   'promote_first_admin',
 ]) {
   if (!sql.includes(token)) {
     console.error(`Production SQL is missing ${token}`)
     process.exit(1)
   }
+}
+
+
+for (const forbiddenToken of [
+  "router.replace('/change-password')",
+  "must_change_password?'/change-password'",
+  'must_change_password: true',
+]) {
+  for (const file of ['app/login/page.tsx', 'components/Protected.tsx', 'components/WorkspaceClient.tsx', 'app/api/admin/users/route.ts']) {
+    if (readFileSync(file, 'utf8').includes(forbiddenToken)) {
+      console.error(`Forced password-change logic still appears in ${file}: ${forbiddenToken}`)
+      process.exit(1)
+    }
+  }
+}
+if (!sql.includes('alter column must_change_password set default false')) {
+  console.error('Production SQL must disable forced password-change default')
+  process.exit(1)
 }
 
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'))

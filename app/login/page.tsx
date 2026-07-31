@@ -30,12 +30,12 @@ export default function Login(){
     console.error('Login failed:',error.message)
     setError('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบ Username และ Password')
    }else{
-    const {data:profile}=await supabase.from('profiles').select('active,must_change_password').eq('id',data.user.id).maybeSingle()
+    const {data:profile}=await supabase.from('profiles').select('active').eq('id',data.user.id).maybeSingle()
     if(profile?.active===false){
      await supabase.auth.signOut()
      setError('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ')
     }else{
-     router.replace(profile?.must_change_password?'/change-password':'/workspace')
+     router.replace('/workspace')
      router.refresh()
     }
    }

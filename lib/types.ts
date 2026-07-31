@@ -18,7 +18,6 @@ export type Profile = {
   email: string
   full_name: string
   role: AppRole
-  must_change_password: boolean
   active: boolean
   created_at?: string
   updated_at?: string

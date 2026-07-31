@@ -13,7 +13,6 @@ type UserRow = {
   role: string
   access_mode: AccessMode | null
   active: boolean
-  must_change_password: boolean
   created_at: string
 }
 
@@ -94,9 +93,9 @@ export default function UsersPage() {
   }
 
   async function resetPassword(row: UserRow) {
-    const value = window.prompt(`ตั้งรหัสผ่านชั่วคราวสำหรับ ${row.email.split('@')[0]}`, '1234')
+    const value = window.prompt(`ตั้งรหัสผ่านใหม่สำหรับ ${row.email.split('@')[0]}`, '1234')
     if (!value) return
-    await updateUser(row, { password: value, mustChangePassword: true })
+    await updateUser(row, { password: value })
   }
 
   return <Protected>
@@ -130,13 +129,13 @@ export default function UsersPage() {
           </select>
         </div>
         <div className="field">
-          <label>รหัสผ่านชั่วคราว</label>
+          <label>รหัสผ่านเริ่มต้น</label>
           <input value={password} onChange={event => setPassword(event.target.value)} minLength={4} required />
         </div>
         <div><button className="btn primary" disabled={busy}>{busy ? 'กำลังบันทึก...' : 'เพิ่มผู้ใช้งาน'}</button></div>
       </form>
       <div className="notice" style={{ marginTop: 14 }}>
-        รหัส 1234 ใช้เป็นรหัสชั่วคราวได้ ผู้ดูแลระบบควรให้ผู้ใช้เปลี่ยนรหัสผ่านหลังเริ่มใช้งานครั้งแรก
+        ผู้ใช้สามารถเข้าสู่ระบบด้วยรหัสที่ผู้ดูแลระบบกำหนดได้ทันที ระบบจะไม่บังคับเปลี่ยนรหัสผ่าน
       </div>
     </div>
 

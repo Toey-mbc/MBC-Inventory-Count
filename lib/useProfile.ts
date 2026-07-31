@@ -26,7 +26,7 @@ export function useProfile() {
 
     const { data, error: profileError } = await supabase
       .from('profiles')
-      .select('id,email,full_name,role,must_change_password,active')
+      .select('id,email,full_name,role,active')
       .eq('id', user.id)
       .single()
 

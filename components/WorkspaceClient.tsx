@@ -19,7 +19,6 @@ type ProfileRow = {
   role: string
   access_mode: 'read' | 'edit' | null
   active: boolean
-  must_change_password?: boolean
 }
 
 type WorkspaceEvent = {
@@ -112,13 +111,12 @@ export default function WorkspaceClient({ html }: { html: string }) {
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id,email,full_name,role,access_mode,active,must_change_password')
+          .select('id,email,full_name,role,access_mode,active')
           .eq('id', authData.user.id)
           .maybeSingle()
         if (profileError) throw profileError
         const current = profile as ProfileRow | null
         if (!current?.active) throw new Error('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ')
-        if (current.must_change_password) { router.replace('/change-password'); return }
 
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')

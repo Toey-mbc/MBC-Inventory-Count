@@ -21,15 +21,13 @@ export default function Protected({ children }: { children: React.ReactNode }) {
       }
       const { data: profile } = await supabase
         .from('profiles')
-        .select('active,must_change_password')
+        .select('active')
         .eq('id', authData.user.id)
         .maybeSingle()
       if (!active) return
       if (profile?.active === false) {
         await supabase.auth.signOut()
         router.replace('/login')
-      } else if (profile?.must_change_password) {
-        router.replace('/change-password')
       } else {
         setReady(true)
       }
