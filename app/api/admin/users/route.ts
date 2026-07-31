@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server/admin'
+import { accessModeFromRole, normalizeAccessMode, roleFromAccessMode } from '@/lib/permissions'
+
+type ProfileListRow = {
+  id: string
+  email: string
+  full_name: string
+  role: string
+  active: boolean
+  created_at: string
+}
 
 const AUTH_DOMAIN = 'mbc.internal'
 const SHORT_PASSWORD_ALIAS = '1234'
@@ -13,23 +23,25 @@ function internalPassword(value: string) {
   return value === SHORT_PASSWORD_ALIAS ? SHORT_PASSWORD_INTERNAL : value
 }
 
-function normalizeAccessMode(value: unknown): 'read' | 'edit' {
-  return value === 'edit' ? 'edit' : 'read'
-}
-
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin(request)
     if ('error' in auth) return auth.error
     const { data, error } = await auth.supabase
       .from('profiles')
-      .select('id,email,full_name,role,access_mode,active,created_at')
+      .select('id,email,full_name,role,active,created_at')
       .order('created_at', { ascending: true })
     if (error) throw error
-    return NextResponse.json({ users: data ?? [] })
+
+    const users = ((data ?? []) as ProfileListRow[]).map((row) => ({
+      ...row,
+      access_mode: accessModeFromRole(row.role),
+    }))
+    return NextResponse.json({ users })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'ไม่สามารถโหลดผู้ใช้งานได้' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'ไม่สามารถโหลดผู้ใช้งานได้'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -41,6 +53,7 @@ export async function POST(request: NextRequest) {
     const username = normalizeUsername(String(body.username ?? ''))
     const fullName = String(body.fullName ?? '').trim()
     const accessMode = normalizeAccessMode(body.accessMode)
+    const role = roleFromAccessMode(accessMode)
     const password = String(body.password ?? '')
 
     if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
@@ -57,8 +70,7 @@ export async function POST(request: NextRequest) {
       email_confirm: true,
       user_metadata: {
         full_name: fullName,
-        role: 'counter',
-        access_mode: accessMode,
+        role,
         must_change_password: false,
       },
     })
@@ -69,8 +81,7 @@ export async function POST(request: NextRequest) {
 
     const { error: profileError } = await auth.supabase.from('profiles').update({
       full_name: fullName,
-      role: 'counter',
-      access_mode: accessMode,
+      role,
       active: true,
       must_change_password: false,
       updated_at: new Date().toISOString(),
@@ -82,12 +93,13 @@ export async function POST(request: NextRequest) {
       action: 'create_user',
       entity_type: 'profile',
       entity_id: data.user.id,
-      details: { username, access_mode: accessMode },
+      details: { username, access_mode: accessMode, role },
     })
     return NextResponse.json({ ok: true, id: data.user.id })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'สร้างผู้ใช้งานไม่สำเร็จ' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'สร้างผู้ใช้งานไม่สำเร็จ'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
@@ -115,9 +127,11 @@ export async function PATCH(request: NextRequest) {
       }
       update.active = body.active
     }
+
+    let accessMode: 'read' | 'edit' | undefined
     if (typeof body.accessMode === 'string' && target.role !== 'admin') {
-      update.access_mode = normalizeAccessMode(body.accessMode)
-      update.role = 'counter'
+      accessMode = normalizeAccessMode(body.accessMode)
+      update.role = roleFromAccessMode(accessMode)
     }
 
     const { error: profileError } = await auth.supabase.from('profiles').update(update).eq('id', id)
@@ -144,7 +158,7 @@ export async function PATCH(request: NextRequest) {
       entity_type: 'profile',
       entity_id: id,
       details: {
-        access_mode: body.accessMode,
+        access_mode: accessMode,
         active: body.active,
         password_reset: Boolean(body.password),
       },
@@ -152,6 +166,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: 'แก้ไขผู้ใช้งานไม่สำเร็จ' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'แก้ไขผู้ใช้งานไม่สำเร็จ'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

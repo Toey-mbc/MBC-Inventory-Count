@@ -1,24 +1,18 @@
-MBC Inventory Count - ขั้นตอน Deploy
-=====================================
+MBC Inventory Production 2.0.2
 
-1) อัปโหลดไฟล์ทั้งหมดในโฟลเดอร์นี้ไว้ที่ Root ของ GitHub Repository
-2) ฐานข้อมูลเดิม: รัน RUN_THIS_SQL_PRODUCTION_UPGRADE.sql ใน Supabase SQL Editor
-   หากต้องการแก้เฉพาะปัญหาบังคับเปลี่ยนรหัส ให้รัน RUN_THIS_SQL_DISABLE_FORCE_PASSWORD_CHANGE.sql
-   ฐานข้อมูลใหม่: รัน supabase/migrations/001_initial.sql ถึง 007_production_workspace.sql ตามลำดับ
-3) สร้าง Admin คนแรกใน Supabase Auth
-   Email: admin@mbc.internal
-   Password: Toey1234
-   Auto Confirm User: เปิด
-4) รันใน SQL Editor:
-   select public.promote_first_admin('admin@mbc.internal');
-5) ตั้งค่า Environment Variables ใน Vercel:
-   NEXT_PUBLIC_SUPABASE_URL
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-   SUPABASE_SERVICE_ROLE_KEY
-6) Deploy โดยปิด Build Cache ในรอบแรก
-7) Login ด้วย Username: admin / Password: Toey1234
-8) เพิ่มผู้ใช้อื่นจากเมนู ผู้ใช้งานและสิทธิ์ ภายในระบบ
-9) ผู้ใช้ใหม่ Login ด้วยรหัสที่ Admin กำหนดได้ทันที ระบบไม่บังคับเปลี่ยนรหัสผ่าน
+กรณีอัปเดตจากชุดก่อนหน้าและพบข้อความ
+"column profiles.access_mode does not exist"
 
-อ่านรายละเอียดทั้งหมดใน DEPLOY_GUIDE_TH.md
-ตรวจรายการก่อนใช้งานจริงใน PRODUCTION_CHECKLIST_TH.md
+1. เข้า Supabase > SQL Editor
+2. เปิดไฟล์ RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql
+3. คัดลอกทั้งหมดแล้วกด Run
+4. นำไฟล์โปรเจกต์ชุดนี้ขึ้น GitHub
+5. Vercel จะ Deploy ใหม่ หรือกด Redeploy โดยปิด Build Cache
+
+สิทธิ์ผู้ใช้งานในชุดนี้ไม่ใช้คอลัมน์ access_mode อีกแล้ว
+- viewer = อ่าน
+- counter / warehouse_manager / sale_support = แก้ไข
+- admin = ผู้ดูแลระบบ
+
+หน้า Login ใช้ Username ตามเดิม ไม่ต้องกรอก @mbc.internal
+ระบบไม่บังคับเปลี่ยนรหัสผ่านครั้งแรก

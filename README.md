@@ -1,73 +1,50 @@
-# MBC Inventory Count
+# MBC Inventory Production 2.0.2
 
-ระบบตรวจนับสินค้าคงคลังออนไลน์สำหรับ MBC Communications พัฒนาด้วย Next.js และ Supabase รองรับการใช้งานหลายอุปกรณ์ การตรวจนับด้วยบาร์โค้ด การจัดการสิทธิ์ รายงานสินค้า และการตรวจสอบย้อนหลัง
+ระบบตรวจนับสินค้าสำหรับใช้งานจริงบน Next.js, Vercel และ Supabase
 
-## ความสามารถหลัก
+## สิ่งที่แก้ในรุ่นนี้
 
-- เข้าสู่ระบบด้วย Username และ Password
-- ผู้ดูแลระบบกำหนดสิทธิ์ผู้ใช้เป็น **อ่าน** หรือ **แก้ไข**
-- รอบตรวจนับเลือกข้อมูลตั้งต้นได้ 2 วิธี
-  - ใช้ยอดสินค้าคงคลังปัจจุบันจากระบบ
-  - นำเข้า Excel/CSV ที่ผู้สร้างรอบจัดเตรียมเอง
-- สแกนบาร์โค้ดด้วย USB/Bluetooth Scanner หรือกล้องมือถือ
-- Scan Event แบบเพิ่มรายการ ไม่เขียนทับประวัติเดิม
-- เก็บรายการรอซิงก์เมื่อการเชื่อมต่อสะดุด และส่งซ้ำแบบไม่เพิ่มยอดซ้ำ
-- รายงาน Barcode, SKU, แบรนด์, ชื่อสินค้า, รายละเอียด, คลัง, โลเคชั่น, สภาพสินค้า และจำนวน
-- ส่งออก Excel และพิมพ์/บันทึก PDF
-- ผู้ดูแลระบบสำรอง กู้คืน และล้างข้อมูลตามขอบเขตได้
-- Audit Log สำหรับการสร้าง แก้ไข อนุมัติ ล้างข้อมูล และจัดการผู้ใช้
+- แก้ปัญหา `column profiles.access_mode does not exist`
+- ยกเลิกการพึ่งพาคอลัมน์ `profiles.access_mode` ทั้งฝั่งเว็บและฐานข้อมูล
+- ใช้ `profiles.role` ที่มีอยู่เดิมสำหรับสิทธิ์ 3 ระดับ
+  - `viewer` = อ่าน
+  - `counter`, `warehouse_manager`, `sale_support` = แก้ไข
+  - `admin` = ผู้ดูแลระบบ
+- Admin ยังคงเลือกสิทธิ์ “อ่าน / แก้ไข” จากหน้าผู้ใช้งานได้ตามเดิม
+- ไม่มีการบังคับเปลี่ยนรหัสผ่านครั้งแรก
+- คงเมนูล้างข้อมูลสำหรับ Admin เท่านั้น
+- คงการสร้างรอบตรวจนับแบบเลือกข้อมูลตั้งต้นจากระบบหรือ Import Excel/CSV
+- คงรายงาน Barcode, SKU, แบรนด์, ชื่อสินค้า, Description, คลัง, โลเคชั่น และจำนวน
 
-## สิทธิ์การใช้งาน
+## อัปเดตฐานข้อมูลเดิม
 
-| สิทธิ์ | การใช้งาน |
-|---|---|
-| อ่าน | ดู Dashboard, สินค้าคงคลัง, รอบตรวจนับ, ผลตรวจนับ, รายงาน และส่งออกข้อมูล โดยไม่สามารถบันทึกการเปลี่ยนแปลง |
-| แก้ไข | ตรวจนับ สร้างรอบ จัดการสินค้า/คลัง/โลเคชั่น โอนย้าย ตรวจสอบ และอนุมัติรายการ |
-| Admin | สิทธิ์เต็ม รวมถึงจัดการผู้ใช้ ตั้งค่าระบบ สำรอง/กู้คืน และล้างข้อมูล |
-
-ผู้ใช้งานทั่วไปเลือกได้เฉพาะ **อ่าน** หรือ **แก้ไข** ส่วน Admin เป็นบัญชีผู้ดูแลระบบที่ตั้งค่าครั้งแรก
-
-## โครงสร้างข้อมูลออนไลน์
-
-- `workspace_states` เก็บข้อมูลหลักและสถานะการทำงานร่วมกัน
-- `workspace_scan_events` เก็บ Scan Event แบบ Append-only เพื่อรองรับรายการจำนวนมาก
-- `profiles` เก็บสิทธิ์และสถานะผู้ใช้
-- `audit_logs` เก็บประวัติการทำรายการ
-- ตารางหลักเดิม เช่น `products`, `warehouses`, `locations`, `count_rounds` ยังคงรองรับการพัฒนาต่อแบบ Normalize
-
-## การติดตั้ง
-
-โปรดอ่าน [DEPLOY_GUIDE_TH.md](DEPLOY_GUIDE_TH.md) และดำเนินการตามลำดับ
-
-สำหรับฐานข้อมูลที่ติดตั้งระบบรุ่นก่อนหน้าแล้ว ให้รันไฟล์:
+รันไฟล์นี้ใน Supabase SQL Editor:
 
 ```text
-RUN_THIS_SQL_PRODUCTION_UPGRADE.sql
+RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql
 ```
 
-สำหรับ Supabase Project ใหม่ ให้รันไฟล์ใน `supabase/migrations` ตั้งแต่ `001_initial.sql` ถึง `007_production_workspace.sql` ตามลำดับ
+ไฟล์รันซ้ำได้ และไม่ลบข้อมูลตรวจนับเดิม
 
-## Environment Variables
+## ติดตั้งฐานข้อมูลใหม่
+
+รันไฟล์ใน `supabase/migrations` ตามลำดับ `001` ถึง `007`
+
+## Environment Variables ใน Vercel
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` ใช้เฉพาะฝั่ง Server ห้ามเติม `NEXT_PUBLIC_` และห้ามนำไปใส่ใน Browser Code
+ห้ามใส่ `NEXT_PUBLIC_` หน้าตัว `SUPABASE_SERVICE_ROLE_KEY`
 
-## ตรวจสอบโปรเจกต์ก่อน Deploy
+## คำสั่งตรวจสอบ
 
 ```bash
 npm install
 npm run check:production
+npm run typecheck
 npm run build
 ```
-
-คำสั่ง `check:production` ตรวจโครงสร้างไฟล์ ฟังก์ชันสำคัญ ข้อความหน้าระบบ และ JavaScript ภายใน Workspace ก่อนเริ่ม Build
-
-
-## การเข้าสู่ระบบผู้ใช้
-
-ผู้ใช้ใหม่สามารถเข้าสู่ระบบด้วยรหัสผ่านที่ Admin กำหนดได้ทันที ระบบไม่บังคับเปลี่ยนรหัสผ่านครั้งแรก Admin สามารถ Reset Password ได้จากหน้า ผู้ใช้งานและสิทธิ์

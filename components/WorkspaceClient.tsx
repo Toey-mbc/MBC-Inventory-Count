@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { accessModeFromRole } from '@/lib/permissions'
 
 type WorkspaceStateRow = {
   id: string
@@ -17,7 +18,6 @@ type ProfileRow = {
   email: string
   full_name: string
   role: string
-  access_mode: 'read' | 'edit' | null
   active: boolean
 }
 
@@ -43,9 +43,19 @@ const WORKSPACE_ID = 'main'
 const EVENT_PAGE_SIZE = 1000
 
 function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error && error.message) return error.message
-  if (typeof error === 'object' && error && 'message' in error) return String(error.message)
-  return fallback
+  const message = error instanceof Error && error.message
+    ? error.message
+    : typeof error === 'object' && error && 'message' in error
+      ? String(error.message)
+      : fallback
+
+  if (/workspace_states|workspace_scan_events|save_workspace_state/i.test(message) && /does not exist|schema cache|not find/i.test(message)) {
+    return 'ฐานข้อมูลยังไม่ได้อัปเกรด กรุณาให้ผู้ดูแลระบบรันไฟล์ RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql ใน Supabase SQL Editor'
+  }
+  if (/access_mode/i.test(message)) {
+    return 'กรุณา Deploy ไฟล์ Production 2.0.2 และรัน SQL ซ่อมฐานข้อมูลที่แนบมา'
+  }
+  return message
 }
 
 async function fetchAllEvents(supabase: SupabaseClient): Promise<WorkspaceEvent[]> {
@@ -111,7 +121,7 @@ export default function WorkspaceClient({ html }: { html: string }) {
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('id,email,full_name,role,access_mode,active')
+          .select('id,email,full_name,role,active')
           .eq('id', authData.user.id)
           .maybeSingle()
         if (profileError) throw profileError
@@ -120,7 +130,7 @@ export default function WorkspaceClient({ html }: { html: string }) {
 
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id,email,full_name,role,access_mode,active')
+          .select('id,email,full_name,role,active')
           .order('full_name', { ascending: true })
         if (profilesError) throw profilesError
 
@@ -135,13 +145,13 @@ export default function WorkspaceClient({ html }: { html: string }) {
         const row = stateData as WorkspaceStateRow | null
         const state = { ...((row?.state ?? {}) as Record<string, unknown>), scanEvents: events }
         const isAdmin = current.role === 'admin'
-        const accessMode: 'read' | 'edit' = isAdmin || current.access_mode === 'edit' ? 'edit' : 'read'
+        const accessMode = accessModeFromRole(current.role)
         const users = ((profiles ?? []) as ProfileRow[]).map(user => ({
           id: user.id,
           name: user.full_name || user.email.split('@')[0],
           email: user.email,
           role: user.role,
-          accessMode: user.role === 'admin' || user.access_mode === 'edit' ? 'edit' : 'read',
+          accessMode: accessModeFromRole(user.role),
           isAdmin: user.role === 'admin',
           active: user.active,
         }))

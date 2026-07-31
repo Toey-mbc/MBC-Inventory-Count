@@ -1,0 +1,17 @@
+MBC Inventory Production 2.0.2 - Validation Report
+
+ผ่านการตรวจสอบ:
+- Production structure check
+- TypeScript strict static check โดยใช้ type stubs ชั่วคราวสำหรับ dependency ภายนอก
+- JavaScript syntax ใน legacy/workspace.html
+- JavaScript syntax ของ prebuild/check scripts
+- SQL root และ migration 007 ตรงกัน
+- Runtime ไม่ Query หรือ Update คอลัมน์ profiles.access_mode
+- ไม่มี logic บังคับเปลี่ยนรหัสผ่าน
+- ไม่มีข้อความ UAT / Prototype / Revision บนหน้าระบบ
+- ฟังก์ชันสิทธิ์อ่าน/แก้ไขใช้ profiles.role
+
+หมายเหตุ:
+- สภาพแวดล้อมสร้างไฟล์ไม่สามารถดาวน์โหลด package จาก npm registry ภายในได้
+  จึงไม่ได้รัน next build แบบติดตั้ง dependency จริงในเครื่องนี้
+- Package versions ถูกกำหนดไว้ใน package.json สำหรับ Vercel ติดตั้งตอน Deploy

@@ -3,19 +3,19 @@ import { extname, join, resolve } from 'node:path'
 
 const requiredFiles = [
   'app/login/page.tsx',
-  'app/change-password/page.tsx',
   'app/workspace/page.tsx',
   'app/users/page.tsx',
   'app/api/admin/users/route.ts',
   'app/api/admin/workspace/route.ts',
   'components/WorkspaceClient.tsx',
+  'lib/permissions.ts',
   'legacy/workspace.html',
   'supabase/migrations/007_production_workspace.sql',
   'RUN_THIS_SQL_PRODUCTION_UPGRADE.sql',
-  'RUN_THIS_SQL_DISABLE_FORCE_PASSWORD_CHANGE.sql',
+  'RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql',
 ]
 
-const missing = requiredFiles.filter(file => !existsSync(file))
+const missing = requiredFiles.filter((file) => !existsSync(file))
 if (missing.length) {
   console.error(`Missing required files: ${missing.join(', ')}`)
   process.exit(1)
@@ -28,10 +28,21 @@ const obsoleteFiles = [
   'tsconfig.internal.json',
   'tsconfig.tsbuildinfo',
 ]
-const obsoleteFound = obsoleteFiles.filter(file => existsSync(file))
+const obsoleteFound = obsoleteFiles.filter((file) => existsSync(file))
 if (obsoleteFound.length) {
   console.error(`Obsolete build files found: ${obsoleteFound.join(', ')}`)
   process.exit(1)
+}
+
+function walk(directory) {
+  const output = []
+  for (const name of readdirSync(directory)) {
+    const path = join(directory, name)
+    const info = statSync(path)
+    if (info.isDirectory()) output.push(...walk(path))
+    else if (['.ts', '.tsx', '.js', '.mjs', '.html', '.md', '.sql'].includes(extname(name))) output.push(path)
+  }
+  return output
 }
 
 const workspace = readFileSync('legacy/workspace.html', 'utf8')
@@ -45,22 +56,10 @@ const requiredWorkspaceTokens = [
   'ล้างข้อมูลระบบ',
   'reportBrand',
 ]
-
-const missingTokens = requiredWorkspaceTokens.filter(token => !workspace.includes(token))
+const missingTokens = requiredWorkspaceTokens.filter((token) => !workspace.includes(token))
 if (missingTokens.length) {
   console.error(`Workspace production features missing: ${missingTokens.join(', ')}`)
   process.exit(1)
-}
-
-function walk(directory) {
-  const output = []
-  for (const name of readdirSync(directory)) {
-    const path = join(directory, name)
-    const info = statSync(path)
-    if (info.isDirectory()) output.push(...walk(path))
-    else if (['.ts', '.tsx', '.js', '.mjs', '.html', '.md'].includes(extname(name))) output.push(path)
-  }
-  return output
 }
 
 const forbiddenUiText = [
@@ -84,25 +83,41 @@ for (const file of uiFiles) {
   }
 }
 
-const sql = readFileSync('RUN_THIS_SQL_PRODUCTION_UPGRADE.sql', 'utf8')
-const migration = readFileSync('supabase/migrations/007_production_workspace.sql', 'utf8')
-if (sql.trim() !== migration.trim()) {
-  console.error('Root production SQL and migration 007 are not identical')
+const migration = readFileSync('supabase/migrations/007_production_workspace.sql', 'utf8').trim()
+const rootSql = readFileSync('RUN_THIS_SQL_PRODUCTION_UPGRADE.sql', 'utf8').trim()
+const repairSql = readFileSync('RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql', 'utf8').trim()
+if (rootSql !== migration || repairSql !== migration) {
+  console.error('Production SQL copies are not identical')
   process.exit(1)
 }
+
 for (const token of [
-  'access_mode',
   'workspace_states',
   'workspace_scan_events',
   'save_workspace_state',
   'promote_first_admin',
+  "role in ('admin','warehouse_manager','sale_support','counter')",
+  "when role = 'viewer' then 'read' else 'edit'",
 ]) {
-  if (!sql.includes(token)) {
+  if (!migration.includes(token)) {
     console.error(`Production SQL is missing ${token}`)
     process.exit(1)
   }
 }
 
+if (/add\s+column\s+if\s+not\s+exists\s+access_mode/i.test(migration)) {
+  console.error('Production SQL must not require profiles.access_mode')
+  process.exit(1)
+}
+
+const runtimeFiles = [...walk('app'), ...walk('components'), ...walk('lib')]
+for (const file of runtimeFiles) {
+  const source = readFileSync(file, 'utf8')
+  if (/\.select\([^\n)]*access_mode/.test(source) || /\.update\(\{[^}]*access_mode/s.test(source)) {
+    console.error(`Runtime database access still requires profiles.access_mode in ${file}`)
+    process.exit(1)
+  }
+}
 
 for (const forbiddenToken of [
   "router.replace('/change-password')",
@@ -116,7 +131,7 @@ for (const forbiddenToken of [
     }
   }
 }
-if (!sql.includes('alter column must_change_password set default false')) {
+if (!migration.includes('alter column must_change_password set default false')) {
   console.error('Production SQL must disable forced password-change default')
   process.exit(1)
 }
@@ -136,7 +151,7 @@ for (const script of ['build', 'prebuild', 'check:production', 'typecheck']) {
 }
 
 const localImports = /(?:from\s+|import\s*\()(['"])(@\/[^'"]+|\.\.?\/[^'"]+)\1/g
-for (const file of [...walk('app'), ...walk('components'), ...walk('lib')]) {
+for (const file of runtimeFiles) {
   if (!['.ts', '.tsx', '.js', '.mjs'].includes(extname(file))) continue
   const source = readFileSync(file, 'utf8')
   for (const match of source.matchAll(localImports)) {
@@ -147,7 +162,7 @@ for (const file of [...walk('app'), ...walk('components'), ...walk('lib')]) {
       `${target}.ts`, `${target}.tsx`, `${target}.js`, `${target}.mjs`,
       join(target, 'index.ts'), join(target, 'index.tsx'), join(target, 'index.js'),
     ]
-    if (!candidates.some(candidate => existsSync(candidate))) {
+    if (!candidates.some((candidate) => existsSync(candidate))) {
       console.error(`Unresolved local import in ${file}: ${match[2]}`)
       process.exit(1)
     }

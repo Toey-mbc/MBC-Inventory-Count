@@ -10,7 +10,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
   full_name text not null default '',
-  role public.app_role not null default 'counter',
+  role public.app_role not null default 'viewer',
   must_change_password boolean not null default false,
   active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -57,7 +57,7 @@ create table public.count_rounds (
   name text not null,
   warehouse_id uuid not null references public.warehouses(id),
   status public.round_status not null default 'draft',
-  environment text not null default 'test' check (environment in ('test','production')),
+  environment text not null default 'production' check (environment in ('test','production')),
   created_by uuid references public.profiles(id),
   started_at timestamptz,
   submitted_at timestamptz,
@@ -124,7 +124,7 @@ language plpgsql security definer set search_path=public as $$
 begin
  insert into public.profiles(id,email,full_name,role,must_change_password)
  values(new.id,coalesce(new.email,''),coalesce(new.raw_user_meta_data->>'full_name',''),
-   coalesce((new.raw_user_meta_data->>'role')::public.app_role,'counter'),
+   coalesce((new.raw_user_meta_data->>'role')::public.app_role,'viewer'),
    false);
  return new;
 end $$;
@@ -137,7 +137,7 @@ $$;
 
 create or replace function public.is_manager() returns boolean
 language sql stable security definer set search_path=public as $$
- select coalesce(public.current_role() in ('admin','warehouse_manager','sale_support'),false)
+ select coalesce(public.current_role() in ('admin','warehouse_manager','sale_support','counter'),false)
 $$;
 
 create or replace function public.update_scan_total() returns trigger

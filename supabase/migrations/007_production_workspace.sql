@@ -1,8 +1,9 @@
 -- MBC Inventory Production Controls
 -- Run after migrations 001-006. Safe to run more than once.
 
-alter table public.profiles
-  add column if not exists access_mode text not null default 'edit';
+-- Permissions use the existing profiles.role column so this migration is
+-- compatible with databases created before access_mode existed.
+-- viewer = read, counter/warehouse_manager/sale_support = edit, admin = full access.
 
 -- Passwords assigned by Admin can be used immediately. No forced password change.
 alter table public.profiles
@@ -12,24 +13,24 @@ update public.profiles
 set must_change_password = false
 where must_change_password is distinct from false;
 
-update public.profiles
-set access_mode = 'read'
-where role = 'viewer' and access_mode <> 'read';
-
-update public.profiles
-set access_mode = 'edit'
-where access_mode is null or access_mode not in ('read','edit');
-
+-- If a previous partial release created access_mode, migrate its values into role.
+-- Dynamic SQL keeps this script safe when the column does not exist.
 do $$
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'profiles_access_mode_check'
-      and conrelid = 'public.profiles'::regclass
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='profiles' and column_name='access_mode'
   ) then
-    alter table public.profiles
-      add constraint profiles_access_mode_check
-      check (access_mode in ('read','edit'));
+    execute 'alter table public.profiles alter column access_mode set default ''edit''';
+    execute $sql$
+      update public.profiles
+      set role = case
+        when role = 'admin' then 'admin'::public.app_role
+        when access_mode = 'read' then 'viewer'::public.app_role
+        else 'counter'::public.app_role
+      end,
+      access_mode = case when role = 'viewer' then 'read' else 'edit' end
+    $sql$;
   end if;
 end $$;
 
@@ -40,7 +41,7 @@ stable
 security definer
 set search_path = public
 as $$
-  select access_mode
+  select case when role = 'viewer' then 'read' else 'edit' end
   from public.profiles
   where id = auth.uid() and active = true
 $$;
@@ -66,7 +67,7 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select role = 'admin' or access_mode = 'edit'
+    (select role in ('admin','warehouse_manager','sale_support','counter')
      from public.profiles where id = auth.uid() and active = true),
     false
   )
@@ -195,22 +196,28 @@ create index if not exists count_round_baselines_round_idx
 
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path=public as $$
+declare
+  v_role public.app_role;
 begin
- insert into public.profiles(id,email,full_name,role,access_mode,must_change_password)
+ v_role := case
+   when new.raw_user_meta_data->>'role' = 'admin' then 'admin'::public.app_role
+   when new.raw_user_meta_data->>'role' in ('warehouse_manager','sale_support','counter') then (new.raw_user_meta_data->>'role')::public.app_role
+   else 'viewer'::public.app_role
+ end;
+
+ insert into public.profiles(id,email,full_name,role,must_change_password)
  values(
    new.id,
    coalesce(new.email,''),
    coalesce(new.raw_user_meta_data->>'full_name',''),
-   coalesce((new.raw_user_meta_data->>'role')::public.app_role,'counter'),
-   case when new.raw_user_meta_data->>'access_mode' = 'read' then 'read' else 'edit' end,
+   v_role,
    false
  )
  on conflict (id) do update set
    email = excluded.email,
    full_name = excluded.full_name,
    role = excluded.role,
-   access_mode = excluded.access_mode,
-   must_change_password = excluded.must_change_password,
+   must_change_password = false,
    updated_at = now();
  return new;
 end $$;
@@ -287,7 +294,7 @@ begin
     raise exception 'An active admin already exists';
   end if;
   update public.profiles
-  set role='admin', access_mode='edit', active=true, must_change_password=false, updated_at=now()
+  set role='admin', active=true, must_change_password=false, updated_at=now()
   where lower(email)=lower(trim(p_email));
   if not found then raise exception 'User not found. Create the Auth user first.'; end if;
 end $$;
