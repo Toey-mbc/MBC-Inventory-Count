@@ -21,12 +21,12 @@ const nav:NavItem[]=[
  {href:'/workspace#products',label:'สินค้า',group:'ข้อมูล',icon:Package},
  {href:'/workspace#masters',label:'คลังและโลเคชั่น',group:'ข้อมูล',icon:Warehouse},
  {href:'/workspace#masters',label:'ข้อมูลหลัก',group:'ข้อมูล',icon:Tags},
- {href:'/users',label:'ผู้ใช้งานและสิทธิ์',group:'ข้อมูล',icon:Users,adminOnly:true},
  {href:'/workspace#results',label:'ผลต่างสต๊อก',group:'ตรวจสอบ',icon:PackageSearch},
  {href:'/workspace#reports',label:'รายงาน',group:'ตรวจสอบ',icon:FileSpreadsheet},
  {href:'/workspace#audit',label:'ประวัติการทำรายการ',group:'ตรวจสอบ',icon:History},
- {href:'/workspace#backup',label:'Backup / Restore',group:'ระบบ',icon:ShieldCheck},
- {href:'/workspace#settings',label:'ตั้งค่าระบบ',group:'ระบบ',icon:Settings},
+ {href:'/settings',label:'ตั้งค่าและผู้ใช้งาน',group:'ระบบ',icon:Users,adminOnly:true},
+ {href:'/workspace#settings',label:'การสแกนและอุปกรณ์',group:'ระบบ',icon:Settings,adminOnly:true},
+ {href:'/workspace#backup',label:'Backup / Restore',group:'ระบบ',icon:ShieldCheck,adminOnly:true},
 ]
 const titles:Record<string,[string,string]>={
  '/dashboard':['Dashboard','ภาพรวมสต๊อกและความคืบหน้าการตรวจนับ'],
@@ -39,12 +39,12 @@ const titles:Record<string,[string,string]>={
  '/products':['สินค้า','จัดการ SKU บาร์โค้ด แบรนด์ และหมวดหมู่'],
  '/locations':['คลังและโลเคชั่น','จัดการคลัง พื้นที่จัดเก็บ และ QR Code'],
  '/masters':['ข้อมูลหลัก','แบรนด์ หมวดหมู่ และสภาพสินค้า'],
- '/users':['ผู้ใช้งานและสิทธิ์','เพิ่มผู้ใช้ กำหนดสิทธิ์อ่านหรือแก้ไข และระงับบัญชี'],
+ '/users':['จัดการผู้ใช้งานและสิทธิ์','เพิ่มผู้ใช้ กำหนดสิทธิ์อ่านหรือแก้ไข ตั้งรหัสผ่าน และระงับบัญชี'],
  '/variance':['ผลต่างสต๊อก','เปรียบเทียบยอดระบบกับยอดตรวจนับจริง'],
  '/reports':['รายงาน','เจาะรายละเอียดถึง SKU โลเคชั่น และสภาพสินค้า'],
  '/audit':['ประวัติการทำรายการ','ตรวจสอบการสแกน แก้ไข และอนุมัติ'],
  '/backup':['Backup / Restore','สำรอง ตรวจสุขภาพ กู้คืน และจัดการข้อมูล'],
- '/settings':['ตั้งค่าระบบ','ตั้งค่าการสแกน เสียง และอุปกรณ์'],
+ '/settings':['ตั้งค่าและจัดการผู้ใช้งาน','ศูนย์จัดการสิทธิ์ผู้ใช้และการตั้งค่าระบบสำหรับ Admin'],
 }
 export default function AppShell({children}:{children:React.ReactNode}){
  const pathname=usePathname(); const router=useRouter(); const supabase=useMemo(()=>createClient(),[])

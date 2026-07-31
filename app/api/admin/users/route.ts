@@ -23,6 +23,11 @@ function internalPassword(value: string) {
   return value === SHORT_PASSWORD_ALIAS ? SHORT_PASSWORD_INTERNAL : value
 }
 
+function apiError(error: unknown, fallback: string) {
+  console.error(error)
+  return NextResponse.json({ error: error instanceof Error ? error.message : fallback }, { status: 500 })
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireAdmin(request)
@@ -33,15 +38,13 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: true })
     if (error) throw error
 
-    const users = ((data ?? []) as ProfileListRow[]).map((row) => ({
+    const users = ((data ?? []) as ProfileListRow[]).map(row => ({
       ...row,
       access_mode: accessModeFromRole(row.role),
     }))
     return NextResponse.json({ users })
   } catch (error) {
-    console.error(error)
-    const message = error instanceof Error ? error.message : 'ไม่สามารถโหลดผู้ใช้งานได้'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiError(error, 'ไม่สามารถโหลดผู้ใช้งานได้')
   }
 }
 
@@ -86,7 +89,10 @@ export async function POST(request: NextRequest) {
       must_change_password: false,
       updated_at: new Date().toISOString(),
     }).eq('id', data.user.id)
-    if (profileError) throw profileError
+    if (profileError) {
+      await auth.supabase.auth.admin.deleteUser(data.user.id)
+      throw profileError
+    }
 
     await auth.supabase.from('audit_logs').insert({
       actor_id: auth.actorId,
@@ -97,9 +103,7 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json({ ok: true, id: data.user.id })
   } catch (error) {
-    console.error(error)
-    const message = error instanceof Error ? error.message : 'สร้างผู้ใช้งานไม่สำเร็จ'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiError(error, 'สร้างผู้ใช้งานไม่สำเร็จ')
   }
 }
 
@@ -113,29 +117,46 @@ export async function PATCH(request: NextRequest) {
 
     const { data: target, error: targetError } = await auth.supabase
       .from('profiles')
-      .select('role,email')
+      .select('role,email,full_name,active')
       .eq('id', id)
       .maybeSingle()
     if (targetError) throw targetError
     if (!target) return NextResponse.json({ error: 'ไม่พบผู้ใช้งาน' }, { status: 404 })
 
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
-    if (typeof body.fullName === 'string') update.full_name = body.fullName.trim()
+    const metadata: Record<string, unknown> = {}
+
+    if (typeof body.fullName === 'string') {
+      const fullName = body.fullName.trim()
+      update.full_name = fullName
+      metadata.full_name = fullName
+    }
+
     if (typeof body.active === 'boolean') {
-      if (target.role === 'admin' && id === auth.actorId && body.active === false) {
-        return NextResponse.json({ error: 'ไม่สามารถระงับบัญชี Admin ที่กำลังใช้งานอยู่' }, { status: 400 })
+      if (target.role === 'admin' && body.active === false) {
+        return NextResponse.json({ error: 'ไม่สามารถระงับบัญชีผู้ดูแลระบบ' }, { status: 400 })
       }
       update.active = body.active
     }
 
     let accessMode: 'read' | 'edit' | undefined
-    if (typeof body.accessMode === 'string' && target.role !== 'admin') {
+    if (typeof body.accessMode === 'string') {
+      if (target.role === 'admin') {
+        return NextResponse.json({ error: 'สิทธิ์ Admin ไม่สามารถเปลี่ยนเป็นอ่านหรือแก้ไขจากหน้านี้' }, { status: 400 })
+      }
       accessMode = normalizeAccessMode(body.accessMode)
-      update.role = roleFromAccessMode(accessMode)
+      const role = roleFromAccessMode(accessMode)
+      update.role = role
+      metadata.role = role
     }
 
     const { error: profileError } = await auth.supabase.from('profiles').update(update).eq('id', id)
     if (profileError) throw profileError
+
+    if (Object.keys(metadata).length) {
+      const { error: metadataError } = await auth.supabase.auth.admin.updateUserById(id, { user_metadata: metadata })
+      if (metadataError) throw metadataError
+    }
 
     if (typeof body.password === 'string' && body.password) {
       if (body.password.length < 4) {
@@ -160,13 +181,12 @@ export async function PATCH(request: NextRequest) {
       details: {
         access_mode: accessMode,
         active: body.active,
+        full_name_changed: typeof body.fullName === 'string',
         password_reset: Boolean(body.password),
       },
     })
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error(error)
-    const message = error instanceof Error ? error.message : 'แก้ไขผู้ใช้งานไม่สำเร็จ'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return apiError(error, 'แก้ไขผู้ใช้งานไม่สำเร็จ')
   }
 }

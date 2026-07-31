@@ -8,6 +8,8 @@ const requiredFiles = [
   'app/api/admin/users/route.ts',
   'app/api/admin/workspace/route.ts',
   'components/WorkspaceClient.tsx',
+  'components/UserManagement.tsx',
+  'app/settings/page.tsx',
   'lib/permissions.ts',
   'legacy/workspace.html',
   'supabase/migrations/007_production_workspace.sql',
@@ -55,6 +57,8 @@ const requiredWorkspaceTokens = [
   'สิทธิ์การใช้งาน 2 ระดับ',
   'ล้างข้อมูลระบบ',
   'reportBrand',
+  'จัดการผู้ใช้งาน',
+  'open-online-users',
 ]
 const missingTokens = requiredWorkspaceTokens.filter((token) => !workspace.includes(token))
 if (missingTokens.length) {
@@ -133,6 +137,26 @@ for (const forbiddenToken of [
 }
 if (!migration.includes('alter column must_change_password set default false')) {
   console.error('Production SQL must disable forced password-change default')
+  process.exit(1)
+}
+
+
+const userManagement = readFileSync('components/UserManagement.tsx', 'utf8')
+for (const token of [
+  'สิทธิ์อ่าน',
+  'สิทธิ์แก้ไข',
+  "api('POST'",
+  "api('PATCH'",
+  'ตั้งรหัสผ่าน',
+  'ระงับ',
+]) {
+  if (!userManagement.includes(token)) {
+    console.error(`User management feature missing: ${token}`)
+    process.exit(1)
+  }
+}
+if (!readFileSync('app/api/admin/users/route.ts', 'utf8').includes('requireAdmin')) {
+  console.error('User management API must require Admin permission')
   process.exit(1)
 }
 

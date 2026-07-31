@@ -1,19 +1,29 @@
-# คู่มือ Deploy MBC Inventory Production 2.0.2
+# คู่มือ Deploy MBC Inventory Production 2.0.3
 
-## A. แก้ระบบเดิมที่ขึ้น access_mode does not exist
+## A. อัปเดตจาก Production 2.0.2
+
+1. แตก ZIP
+2. เปิดโฟลเดอร์ `MBC_Inventory_Production_V2_0_3`
+3. นำไฟล์และโฟลเดอร์ที่อยู่ภายในไปวางทับที่ Root ของ GitHub Repository
+4. Commit และ Push
+5. เข้า Vercel แล้ว Redeploy โดยปิด `Use existing Build Cache`
+6. Login ด้วย Admin
+7. เปิดเมนู `ระบบ > ตั้งค่าและผู้ใช้งาน`
+
+รุ่นนี้ไม่เพิ่มคอลัมน์ฐานข้อมูลใหม่ จึงไม่ต้องรัน SQL เพิ่ม หากระบบ Production 2.0.2 ใช้งานได้อยู่แล้ว
+
+## B. กรณียังพบ access_mode does not exist
 
 1. เข้า Supabase Dashboard
 2. เปิด SQL Editor
 3. เปิดไฟล์ `RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql`
 4. คัดลอก SQL ทั้งหมดแล้วกด Run
 5. ผลสำเร็จควรเป็น `Success. No rows returned`
-6. นำไฟล์โปรเจกต์ชุดนี้วางทับที่ Root ของ GitHub Repository
-7. Commit และ Push
-8. เข้า Vercel แล้ว Redeploy โดยปิด `Use existing Build Cache`
+6. Redeploy Vercel อีกครั้ง
 
 SQL จะไม่ลบสินค้า ผู้ใช้ รอบตรวจนับ หรือประวัติการยิงบาร์โค้ด
 
-## B. ติดตั้ง Supabase ใหม่
+## C. ติดตั้ง Supabase ใหม่
 
 รัน Migration ตามลำดับ:
 
@@ -48,7 +58,7 @@ Username: admin
 Password: Toey1234
 ```
 
-## C. Environment Variables ใน Vercel
+## D. Environment Variables ใน Vercel
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
@@ -56,13 +66,14 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 ```
 
-## D. ตรวจหลัง Deploy
+## E. ตรวจหลัง Deploy
 
-1. Admin Login ได้
-2. เปิดหน้าผู้ใช้งานและกำหนดสิทธิ์อ่าน/แก้ไขได้
-3. ผู้ใช้สิทธิ์อ่านเปิดดูและ Export ได้ แต่แก้ไขไม่ได้
-4. ผู้ใช้สิทธิ์แก้ไขสร้างรอบ ตรวจนับ และบันทึกได้
-5. เมนูล้างข้อมูลเปิดใช้ได้เฉพาะ Admin
-6. สร้างรอบแบบใช้ข้อมูลตั้งต้นจากระบบได้
-7. สร้างรอบแบบ Import Excel/CSV และ Preview ได้
-8. รายงานกรองแบรนด์ คลัง โลเคชั่น และ SKU ได้
+1. Admin เปิดหน้า `ตั้งค่าและผู้ใช้งาน` ได้
+2. ผู้ใช้ทั่วไปเปิด URL `/settings` หรือ `/users` โดยตรงแล้วถูกส่งกลับหน้าระบบ
+3. Admin เพิ่มผู้ใช้ใหม่ได้
+4. Admin เปลี่ยนสิทธิ์อ่าน/แก้ไขได้
+5. Admin แก้ชื่อ ตั้งรหัสผ่าน ระงับ และเปิดใช้งานบัญชีได้
+6. ผู้ใช้สิทธิ์อ่านเปิดดูและ Export ได้ แต่แก้ไขไม่ได้
+7. ผู้ใช้สิทธิ์แก้ไขสร้างรอบ ตรวจนับ และบันทึกได้
+8. เมนูล้างข้อมูลเปิดใช้ได้เฉพาะ Admin
+9. รายงานกรองแบรนด์ คลัง โลเคชั่น และ SKU ได้

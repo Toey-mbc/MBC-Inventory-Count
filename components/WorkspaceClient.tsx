@@ -53,7 +53,7 @@ function errorMessage(error: unknown, fallback: string) {
     return 'ฐานข้อมูลยังไม่ได้อัปเกรด กรุณาให้ผู้ดูแลระบบรันไฟล์ RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql ใน Supabase SQL Editor'
   }
   if (/access_mode/i.test(message)) {
-    return 'กรุณา Deploy ไฟล์ Production 2.0.2 และรัน SQL ซ่อมฐานข้อมูลที่แนบมา'
+    return 'กรุณา Deploy ไฟล์ Production 2.0.3 และรัน SQL ซ่อมฐานข้อมูลที่แนบมา'
   }
   return message
 }
