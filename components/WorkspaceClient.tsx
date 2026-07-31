@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
-import { accessModeFromRole } from '@/lib/permissions'
+import { accessModeFromRole, isAdminAccount } from '@/lib/permissions'
 
 type WorkspaceStateRow = {
   id: string
@@ -144,7 +144,7 @@ export default function WorkspaceClient({ html }: { html: string }) {
         const events = await fetchAllEvents(supabase)
         const row = stateData as WorkspaceStateRow | null
         const state = { ...((row?.state ?? {}) as Record<string, unknown>), scanEvents: events }
-        const isAdmin = current.role === 'admin'
+        const isAdmin = isAdminAccount(current.role, current.email)
         const accessMode = accessModeFromRole(current.role)
         const users = ((profiles ?? []) as ProfileRow[]).map(user => ({
           id: user.id,
@@ -152,7 +152,7 @@ export default function WorkspaceClient({ html }: { html: string }) {
           email: user.email,
           role: user.role,
           accessMode: accessModeFromRole(user.role),
-          isAdmin: user.role === 'admin',
+          isAdmin: isAdminAccount(user.role, user.email),
           active: user.active,
         }))
 

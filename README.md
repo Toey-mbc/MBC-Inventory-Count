@@ -1,4 +1,4 @@
-# MBC Inventory Production 2.0.3
+# MBC Inventory Production 2.0.4
 
 ระบบตรวจนับสินค้าสำหรับใช้งานจริงบน Next.js, Vercel และ Supabase
 
@@ -60,3 +60,8 @@ npm run check:production
 npm run typecheck
 npm run build
 ```
+
+
+## แก้ไขเมนูตั้งค่าและผู้ใช้งาน (2.0.4)
+
+บัญชี Username `admin` จะถูกตรวจพบเป็นผู้ดูแลระบบและซ่อม Role เป็น `admin` อัตโนมัติเมื่อเปิดหน้าจัดการผู้ใช้ เมนูหมวด **ระบบ** จะแสดงเฉพาะ Admin ประกอบด้วย ตั้งค่าและผู้ใช้งาน, จัดการข้อมูล/Backup และการสแกนและอุปกรณ์

@@ -1,21 +1,23 @@
-MBC Inventory Production 2.0.3
+MBC Inventory Production 2.0.4
 
-อัปเดตจาก Production 2.0.2
-1. นำไฟล์ทั้งหมดในโฟลเดอร์นี้วางทับที่ Root ของ GitHub Repository
-2. Commit และ Push
-3. Vercel จะ Deploy ใหม่ หรือกด Redeploy โดยปิด Build Cache
-4. Login ด้วยบัญชี Admin
-5. เปิดเมนู ระบบ > ตั้งค่าและผู้ใช้งาน
+อัปเดตจาก Production 2.0.3
+1. เข้า Supabase > SQL Editor
+2. รันไฟล์ RUN_THIS_SQL_RESTORE_ADMIN_SETTINGS_V2_0_4.sql หนึ่งครั้ง
+3. นำไฟล์ทั้งหมดในโฟลเดอร์นี้วางทับที่ Root ของ GitHub Repository
+4. Commit และ Push
+5. Vercel จะ Deploy ใหม่ หรือกด Redeploy โดยปิด Build Cache
+6. Logout แล้ว Login ใหม่ด้วยบัญชี admin
+7. Sidebar จะมีหมวด ระบบ > ตั้งค่าและผู้ใช้งาน
 
 Admin สามารถเพิ่มผู้ใช้และกำหนดสิทธิ์ได้จากหน้าเว็บ
 - อ่าน = ดูข้อมูลและ Export ได้ แต่แก้ไขไม่ได้
 - แก้ไข = ตรวจนับ บันทึก และจัดการข้อมูลได้
-- Admin = จัดการผู้ใช้ Backup/Restore และล้างข้อมูล
+- Admin = จัดการผู้ใช้ Backup/Restore การสแกน และล้างข้อมูล
 
-รุ่นนี้ไม่ต้องรัน SQL เพิ่ม หากฐานข้อมูลเดิมใช้งาน Production 2.0.2 ได้อยู่แล้ว
+ระบบมีตัวซ่อมบัญชี admin อัตโนมัติที่ Server เพิ่มเติม หากฐานข้อมูลเดิมกำหนด Role ผิด เมนูและ API จะยังกลับมาใช้งานได้
 
 กรณียังพบข้อความ "column profiles.access_mode does not exist"
-ให้รัน RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql ใน Supabase SQL Editor ก่อน Deploy
+ให้รัน RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql ใน Supabase SQL Editor
 
 หน้า Login ใช้ Username ตามเดิม ไม่ต้องกรอก @mbc.internal
 ระบบไม่บังคับเปลี่ยนรหัสผ่านครั้งแรก

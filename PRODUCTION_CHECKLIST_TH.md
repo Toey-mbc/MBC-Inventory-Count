@@ -1,6 +1,8 @@
-# Production Checklist — MBC Inventory 2.0.3
+# Production Checklist — MBC Inventory 2.0.4
 
 ## ก่อน Deploy
+
+- [ ] รัน `RUN_THIS_SQL_RESTORE_ADMIN_SETTINGS_V2_0_4.sql` ใน Supabase SQL Editor
 
 - [ ] วางไฟล์ทั้งหมดที่ Root ของ GitHub Repository
 - [ ] ตรวจ Environment Variables ใน Vercel ครบ 3 ตัว

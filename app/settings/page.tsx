@@ -8,7 +8,7 @@ export default function SettingsPage() {
     <div className="topbar">
       <div>
         <div className="page-title">ตั้งค่าและจัดการผู้ใช้งาน</div>
-        <div className="muted">ศูนย์จัดการสำหรับ Admin กำหนดสิทธิ์ผู้ใช้และเข้าถึงการตั้งค่าระบบ</div>
+        <div className="muted">ศูนย์จัดการสำหรับผู้ดูแลระบบ เพิ่มผู้ใช้ กำหนดสิทธิ์อ่านหรือแก้ไข และจัดการบัญชี</div>
       </div>
       <div className="settings-quick-actions">
         <a className="btn secondary" href="/workspace#settings">ตั้งค่าการสแกน</a>
@@ -17,7 +17,7 @@ export default function SettingsPage() {
       </div>
     </div>
     <div className="notice" style={{ marginBottom: 16 }}>
-      หน้านี้เปิดให้เฉพาะผู้ดูแลระบบ การเพิ่มผู้ใช้ เปลี่ยนสิทธิ์ Reset Password ระงับหรือเปิดใช้งานบัญชี จะถูกตรวจสอบสิทธิ์ที่ Server ทุกครั้ง
+      เฉพาะผู้ดูแลระบบเท่านั้นที่เข้าหน้านี้ได้ การเพิ่มผู้ใช้ เปลี่ยนสิทธิ์ ตั้งรหัสผ่าน ระงับ หรือเปิดใช้งานบัญชี จะตรวจสอบสิทธิ์ที่ Server ทุกครั้ง
     </div>
     <UserManagement />
   </Protected>

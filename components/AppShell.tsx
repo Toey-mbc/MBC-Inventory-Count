@@ -8,6 +8,7 @@ import {
   Settings, ShieldCheck, Tags, TriangleAlert, Users, Warehouse, X
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { isAdminAccount } from '@/lib/permissions'
 
 type NavItem={href:string;label:string;group:string;icon:React.ComponentType<{size?:number}>;adminOnly?:boolean}
 const nav:NavItem[]=[
@@ -49,7 +50,7 @@ const titles:Record<string,[string,string]>={
 export default function AppShell({children}:{children:React.ReactNode}){
  const pathname=usePathname(); const router=useRouter(); const supabase=useMemo(()=>createClient(),[])
  const [open,setOpen]=useState(false); const [user,setUser]=useState('ผู้ใช้งาน'); const [isAdmin,setIsAdmin]=useState(false)
- useEffect(()=>{let active=true;const loadUser=async()=>{const {data}=await supabase.auth.getUser();if(!active)return;setUser(data.user?.email?.split('@')[0]||'ผู้ใช้งาน');if(data.user){const {data:profile}=await supabase.from('profiles').select('role').eq('id',data.user.id).maybeSingle();if(active)setIsAdmin(profile?.role==='admin')}};void loadUser();return()=>{active=false}},[supabase])
+ useEffect(()=>{let active=true;const loadUser=async()=>{const {data}=await supabase.auth.getUser();if(!active)return;setUser(data.user?.email?.split('@')[0]||'ผู้ใช้งาน');if(data.user){const {data:profile}=await supabase.from('profiles').select('role').eq('id',data.user.id).maybeSingle();if(active)setIsAdmin(isAdminAccount(profile?.role,data.user.email))}};void loadUser();return()=>{active=false}},[supabase])
  useEffect(()=>setOpen(false),[pathname])
  async function logout(){await supabase.auth.signOut();router.replace('/login')}
  const [title,subtitle]=titles[pathname]||['MBC Inventory','ระบบตรวจนับสินค้าคงคลัง']

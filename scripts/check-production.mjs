@@ -15,6 +15,7 @@ const requiredFiles = [
   'supabase/migrations/007_production_workspace.sql',
   'RUN_THIS_SQL_PRODUCTION_UPGRADE.sql',
   'RUN_THIS_SQL_FIX_ACCESS_MODE_ERROR.sql',
+  'RUN_THIS_SQL_RESTORE_ADMIN_SETTINGS_V2_0_4.sql',
 ]
 
 const missing = requiredFiles.filter((file) => !existsSync(file))
@@ -59,6 +60,8 @@ const requiredWorkspaceTokens = [
   'reportBrand',
   'จัดการผู้ใช้งาน',
   'open-online-users',
+  'ตั้งค่าและผู้ใช้งาน',
+  'จัดการข้อมูล / Backup',
 ]
 const missingTokens = requiredWorkspaceTokens.filter((token) => !workspace.includes(token))
 if (missingTokens.length) {
@@ -157,6 +160,27 @@ for (const token of [
 }
 if (!readFileSync('app/api/admin/users/route.ts', 'utf8').includes('requireAdmin')) {
   console.error('User management API must require Admin permission')
+  process.exit(1)
+}
+
+
+const permissionsSource = readFileSync('lib/permissions.ts', 'utf8')
+const workspaceClientSource = readFileSync('components/WorkspaceClient.tsx', 'utf8')
+const appShellSource = readFileSync('components/AppShell.tsx', 'utf8')
+const adminSource = readFileSync('lib/server/admin.ts', 'utf8')
+for (const [file, source] of [
+  ['lib/permissions.ts', permissionsSource],
+  ['components/WorkspaceClient.tsx', workspaceClientSource],
+  ['components/AppShell.tsx', appShellSource],
+  ['lib/server/admin.ts', adminSource],
+]) {
+  if (!source.includes('isAdminAccount')) {
+    console.error(`Admin settings fallback missing in ${file}`)
+    process.exit(1)
+  }
+}
+if (!adminSource.includes(".update({ role: 'admin'")) {
+  console.error('Server admin bootstrap repair is missing')
   process.exit(1)
 }
 

@@ -1,19 +1,21 @@
-MBC Inventory Production 2.0.3 - Validation Report
+MBC Inventory Production 2.0.4 - Validation Report
 
-ผ่านการตรวจสอบ:
-- Production structure check
-- TypeScript static check โดยใช้ type stubs ชั่วคราวสำหรับ dependency ภายนอก
-- JavaScript syntax ใน legacy/workspace.html
-- User Management component และ Admin API route
-- การกำหนดสิทธิ์อ่าน/แก้ไขผ่าน profiles.role
-- Admin Guard ฝั่งหน้าเว็บและ Server API
-- ทางเข้าหน้าจัดการผู้ใช้จาก Settings ใน Workspace
-- SQL root และ migration 007 ตรงกัน
-- Runtime ไม่ Query หรือ Update คอลัมน์ profiles.access_mode
-- ไม่มี logic บังคับเปลี่ยนรหัสผ่าน
-- ไม่มีข้อความ UAT / Prototype / Revision บนหน้าระบบ
+ผลตรวจที่ผ่าน
+- Production structure check: PASS
+- TypeScript/TSX syntax transpile: PASS (36 files)
+- JavaScript/MJS syntax: PASS
+- Legacy Workspace embedded JavaScript syntax: PASS
+- Admin permission logic tests: PASS
+- ตรวจเมนูหมวดระบบและปุ่มตั้งค่า: PASS
+- ตรวจ Server Admin bootstrap repair: PASS
+- ตรวจว่าไม่มี tsconfig.tsbuildinfo / Build cache ในไฟล์ส่งมอบ: PASS
 
-หมายเหตุ:
-- สภาพแวดล้อมสร้างไฟล์ไม่สามารถดาวน์โหลด @supabase/supabase-js จาก npm registry ภายในได้
-  จึงไม่ได้รัน next build แบบติดตั้ง dependency จริงในเครื่องนี้
-- Package versions ถูกกำหนดไว้ใน package.json สำหรับ Vercel ติดตั้งตอน Deploy
+ข้อจำกัดของสภาพแวดล้อมตรวจสอบ
+- ไม่สามารถรัน npm install และ next build เต็มรูปแบบได้ เนื่องจาก npm registry ภายในไม่มีแพ็กเกจ @supabase/supabase-js
+- ไม่มี Dependency ใหม่จาก V2.0.3 และไฟล์ package.json ใช้ชุดเดิม จึงให้ Vercel เป็นผู้รัน Build จริงหลัง Push
+
+การแก้ไขสำคัญ
+- บัญชี Username admin ถูกตรวจเป็น Admin แม้ profiles.role เดิมเป็น viewer/counter
+- API ฝั่ง Server ซ่อม profiles.role เป็น admin อัตโนมัติ
+- มี SQL ซ่อม Role แบบรันซ้ำได้โดยไม่ลบข้อมูล
+- Sidebar แสดงหมวด ระบบ สำหรับ Admin: ตั้งค่าและผู้ใช้งาน, จัดการข้อมูล/Backup, การสแกนและอุปกรณ์

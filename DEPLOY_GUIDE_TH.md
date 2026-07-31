@@ -1,16 +1,17 @@
-# คู่มือ Deploy MBC Inventory Production 2.0.3
+# คู่มือ Deploy MBC Inventory Production 2.0.4
 
-## A. อัปเดตจาก Production 2.0.2
+## A. อัปเดตจาก Production 2.0.3
 
 1. แตก ZIP
-2. เปิดโฟลเดอร์ `MBC_Inventory_Production_V2_0_3`
-3. นำไฟล์และโฟลเดอร์ที่อยู่ภายในไปวางทับที่ Root ของ GitHub Repository
-4. Commit และ Push
-5. เข้า Vercel แล้ว Redeploy โดยปิด `Use existing Build Cache`
-6. Login ด้วย Admin
-7. เปิดเมนู `ระบบ > ตั้งค่าและผู้ใช้งาน`
+2. เข้า Supabase SQL Editor แล้วรัน `RUN_THIS_SQL_RESTORE_ADMIN_SETTINGS_V2_0_4.sql` หนึ่งครั้ง
+3. เปิดโฟลเดอร์ `MBC_Inventory_Production_V2_0_4`
+4. นำไฟล์และโฟลเดอร์ที่อยู่ภายในไปวางทับที่ Root ของ GitHub Repository
+5. Commit และ Push
+6. เข้า Vercel แล้ว Redeploy โดยปิด `Use existing Build Cache`
+7. Logout แล้ว Login ใหม่ด้วย Username `admin`
+8. เปิดเมนู `ระบบ > ตั้งค่าและผู้ใช้งาน`
 
-รุ่นนี้ไม่เพิ่มคอลัมน์ฐานข้อมูลใหม่ จึงไม่ต้องรัน SQL เพิ่ม หากระบบ Production 2.0.2 ใช้งานได้อยู่แล้ว
+SQL V2.0.4 ไม่เพิ่มคอลัมน์ใหม่และไม่ลบข้อมูล มีหน้าที่ซ่อม Role ของบัญชี Username `admin` ให้เป็นผู้ดูแลระบบอย่างถาวร
 
 ## B. กรณียังพบ access_mode does not exist
 
@@ -35,6 +36,7 @@ SQL จะไม่ลบสินค้า ผู้ใช้ รอบตร�
 005_report_schema_repair.sql
 006_report_location_sku_drilldown.sql
 007_production_workspace.sql
+008_restore_admin_settings.sql
 ```
 
 จากนั้นสร้าง Admin คนแรกใน Supabase Authentication:

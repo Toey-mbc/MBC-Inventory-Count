@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { isAdminAccount } from '@/lib/permissions'
 
 type AccessMode = 'read' | 'edit'
 type UserFilter = 'all' | 'read' | 'edit' | 'inactive' | 'admin'
@@ -75,7 +76,7 @@ export default function UserManagement() {
         .eq('id', authData.user.id)
         .maybeSingle()
       if (profileError) throw profileError
-      if (!profile?.active || profile.role !== 'admin') {
+      if (!profile?.active || !isAdminAccount(profile.role, authData.user.email)) {
         router.replace('/workspace#overview')
         return
       }
